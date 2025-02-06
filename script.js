@@ -107,8 +107,6 @@ function addLoadingIndicator() {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     sidebar.classList.toggle('active');
-    const button = document.querySelector('.toggle-sidebar-button');
-    button.textContent = sidebar.classList.contains('active') ? 'Hide Chats' : 'Show Chats';
     updateConversationList();
 }
 

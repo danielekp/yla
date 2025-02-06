@@ -16,7 +16,7 @@ body {
     position: fixed; /* needed for absolute positioning of child */
     overflow: visible;  /* ensure that the icon can overflow the header */
     background-color: #ffffff;
-    padding: 1rem;
+    padding: 0.5rem;
     width: 100%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -59,13 +59,12 @@ body {
 }
 
 .new-chat-button, .toggle-sidebar-button, .download-button {
-    padding: 0.5rem 1rem;
     color: white;
+    padding-left: 1rem;
+    padding-right: 1rem;
     border: none;
     border-radius: 0.5rem;
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
     transition: background-color 0.2s;
 }
 
@@ -385,8 +384,7 @@ body {
 }
 
 .conversation-item.active {
-    background-color: #2c3e50;
-    border: 1px solid #4a90e2;
+    background-color: var(--bg-primary);
 }
 
 .chat-container .message {
@@ -403,11 +401,6 @@ body {
 .message-think {
     background-color: var(--think-message-bg);
     color: var(--text-secondary);
-}
-
-.message-response {
-    background-color: var(--user-message-bg);
-    color: white;
 }
 
 .input-container {
@@ -429,8 +422,8 @@ body {
 }
 
 .theme-toggle-icon {
-    width: 24px;
-    height: 24px;
+    width: 44px;
+    height: 44px;
 }
 
 .loading-message {

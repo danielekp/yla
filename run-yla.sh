@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the directory where your HTML file is located
-HTML_DIR="Documents/yla/"
+HTML_DIR="/home/sd23297/Documents/yla/"
 
 # Start Ollama server in the background
 ollama serve &
