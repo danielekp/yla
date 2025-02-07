@@ -5,20 +5,52 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Dark mode variables */
+:root {
+    /* Light mode colors */
+    --bg-primary: #f5f5f5;
+    --bg-secondary: #ffffff;
+    --text-primary: #333;
+    --text-secondary: #6b7280;
+    --border-color: #e5e5e5;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --user-message-bg: #007AFF;
+    --assistant-message-bg: #ffffff;
+    --think-message-bg: #f3f4f6;
+}
+
+:root.dark-mode {
+    /* Dark mode colors */
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #333;
+    --shadow-color: rgba(2, 0, 2, 0.1);
+    --user-message-bg: #0056b3;
+    --assistant-message-bg: #2c2c2c;
+    --think-message-bg: #1a1a1a;
+}
+
+
 body {
-    background-color: #f5f5f5;
+    background-color: var(--bg-primary);
     height: 100vh;
     display: flex;
     flex-direction: column;
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
 }
 
+/* HEADER STYLE */
+
 .header {
-    position: fixed; /* needed for absolute positioning of child */
-    overflow: visible;  /* ensure that the icon can overflow the header */
-    background-color: #ffffff;
+    position: fixed; 
+    overflow: visible;
+    background-color: var(--bg-secondary);
+    box-shadow: 0 1px 2px var(--shadow-color);
     padding: 0.5rem;
     width: 100%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -27,22 +59,22 @@ body {
 }
 
 .header-title {
-    position: relative; /* base for absolutely positioned icon */
+    position: relative; 
     display: flex;
     align-items: center;
 }
 
 .header-icon {
     position: absolute;
-    width: 100px;      /* make the icon wider than the header height */
+    width: 100px;      
     height: auto;
-    left: 5px;       /* adjust this value to move the icon left relative to the title */
-    top: 0px;        /* adjust this value to shift the icon upward (or use a positive value to shift downward) */
-    z-index: 10;       /* ensure it appears above other elements */
+    left: 5px;      
+    top: 0px;       
+    z-index: 10;     
 }
 
 .header-title h1 {
-    margin-left: 200px; /* adjust so that the title text doesn't collide with the icon */
+    margin-left: 200px; 
     font-size: 1.5rem;
     font-weight: 600;
 }
@@ -51,6 +83,7 @@ body {
     color: #333;
     font-size: 1.5rem;
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 .header-buttons {
@@ -101,8 +134,8 @@ body {
 
 .sidebar {
     width: 250px;
-    background-color: white;
-    border-right: 1px solid #e5e5e5;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
     padding: 1rem;
     overflow-y: auto;
     display: none;
@@ -127,7 +160,8 @@ body {
 .conversation-item {
     padding: 0.75rem;
     border-radius: 0.5rem;
-    background-color: #f5f5f5;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     cursor: pointer;
     opacity: 0.8;
     transition: background-color 0.2s;
@@ -135,12 +169,12 @@ body {
 }
 
 .conversation-item:hover {
-    background-color: #e5e5e5;
+    background-color: var(--border-color);
     opacity: 1;
 }
 
 .conversation-item.active {
-    background-color: #dbeafe;
+    background-color: var(--bg-primary);
     border: 1px solid #60a5fa;
 }
 
@@ -174,26 +208,26 @@ body {
 .message ol {
 list-style-position: inside;
 margin-left: 0;
-padding-left: 1em; /* adjust as needed */
+padding-left: 1em;
 }
 
 .user-message {
-    background-color: #007AFF;
+    background-color: var(--user-message-bg);
     color: white;
     align-self: flex-end;
 }
 
 .assistant-message {
-    background-color: #ffffff;
-    color: #333;
+    background-color: var(--assistant-message-bg);
     align-self: flex-start;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px var(--shadow-color);
 }
 
 .input-container {
     padding: 1rem;
-    background-color: #ffffff;
-    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-secondary);
+    box-shadow: 0 -2px 4px var(--shadow-color);
 }
 
 .input-wrapper {
@@ -206,7 +240,6 @@ padding-left: 1em; /* adjust as needed */
 .message-input {
     flex-grow: 1;
     padding: 0.75rem;
-    border: 1px solid #ddd;
     border-radius: 0.5rem;
     font-size: 1rem;
     resize: none;
@@ -214,6 +247,9 @@ padding-left: 1em; /* adjust as needed */
     max-height: 150px;
     line-height: 1.5;
     overflow-y: auto;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
 }
 
 .send-button {
@@ -250,8 +286,8 @@ padding-left: 1em; /* adjust as needed */
 }
 
 .message-think {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--think-message-bg);
+    color: var(--text-secondary);
     font-size: 0.875rem;
     font-style: italic;
     opacity: 0.7;
@@ -259,13 +295,12 @@ padding-left: 1em; /* adjust as needed */
 }
 
 .message-response {
+    background-color: var(--assistant-message-bg);
     padding: 1rem;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .message-container {
-    background-color: white;
-    border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     overflow: hidden;
@@ -293,10 +328,10 @@ padding-left: 1em; /* adjust as needed */
     padding: 1rem;
     border-radius: 0.5rem;
     max-width: 80%;
-    background-color: #ffffff;
+    background-color: var(--bg-secondary);
     color: #333;
     align-self: flex-start;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -2px 4px var(--shadow-color);
 }
 
 .send-button {
@@ -327,93 +362,6 @@ padding-left: 1em; /* adjust as needed */
     height: 70px;
 }
 
-/* Dark mode variables */
-:root {
-    /* Light mode colors */
-    --bg-primary: #f5f5f5;
-    --bg-secondary: #ffffff;
-    --text-primary: #333;
-    --text-secondary: #6b7280;
-    --border-color: #e5e5e5;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --user-message-bg: #007AFF;
-    --assistant-message-bg: #ffffff;
-    --think-message-bg: #f3f4f6;
-}
-
-:root.dark-mode {
-    /* Dark mode colors */
-    --bg-primary: #121212;
-    --bg-secondary: #1e1e1e;
-    --text-primary: #e0e0e0;
-    --text-secondary: #a0a0a0;
-    --border-color: #333;
-    --shadow-color: rgba(255, 255, 255, 0.1);
-    --user-message-bg: #0056b3;
-    --assistant-message-bg: #2c2c2c;
-    --think-message-bg: #1a1a1a;
-}
-
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.header {
-    background-color: var(--bg-secondary);
-    box-shadow: 0 2px 4px var(--shadow-color);
-}
-
-.header h1 {
-    color: var(--text-primary);
-}
-
-.sidebar {
-    background-color: var(--bg-secondary);
-    border-right: 1px solid var(--border-color);
-}
-
-.conversation-item {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-}
-
-.conversation-item:hover {
-    background-color: var(--border-color);
-}
-
-.conversation-item.active {
-    background-color: var(--bg-primary);
-}
-
-.chat-container .message {
-    background-color: var(--assistant-message-bg);
-    color: var(--text-primary);
-    box-shadow: 0 1px 2px var(--shadow-color);
-}
-
-.user-message {
-    background-color: var(--user-message-bg) !important;
-    color: white !important;
-}
-
-.message-think {
-    background-color: var(--think-message-bg);
-    color: var(--text-secondary);
-}
-
-.input-container {
-    background-color: var(--bg-secondary);
-    box-shadow: 0 -2px 4px var(--shadow-color);
-}
-
-.message-input {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
 .theme-toggle-button {
     background: none;
     border: none;
@@ -424,9 +372,4 @@ body {
 .theme-toggle-icon {
     width: 44px;
     height: 44px;
-}
-
-.loading-message {
-    background-color: var(--bg-secondary);
-    box-shadow: 0 -2px 4px var(--shadow-color);
 }

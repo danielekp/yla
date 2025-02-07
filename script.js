@@ -183,7 +183,8 @@ function addEnhancedMessage(thinkText, responseText) {
 function sendMessage() {
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
-    const model = "deepseek-r1:1.5b"
+    const model = "deepseek-r1:7b"
+    const num_ctx = 8192
     if (message) {
         // Add user message
         addMessage(message, 'user');
@@ -204,13 +205,13 @@ function sendMessage() {
 
         const payload = {
             model: model,
-            messages: currentConversation.messages,
+            messages: truncateConversation(currentConversation.messages, num_ctx),
             options: {
-                num_ctx: 32768
+                num_ctx: num_ctx
             },
             stream: false
         };
-
+        console.log(payload.messages);
         // Fetch response from server
         fetch('http://localhost:11434/v1/chat/completions', {
             method: 'POST',
@@ -347,4 +348,24 @@ function toggleTheme() {
         themeToggleIcon.src = 'sun.png';
         localStorage.setItem('theme', 'dark');
     }
+}
+
+function truncateConversation(currentConversation, num_ctx) {
+    const messagesWithTokens = currentConversation.map(msg => {
+        const wordCount = msg.content.split(/\s+/).length;
+        const tokens = Math.ceil(wordCount*3); // Round up to be conservative, n_tokens = number_of_words * 3
+        return { ...msg, tokens };
+    });
+
+    let totalTokens = messagesWithTokens.reduce((sum, msg) => sum + msg.tokens, 0);
+
+    if (totalTokens <= num_ctx) return currentConversation;
+
+    let index = 0;
+    while (totalTokens > num_ctx && index < messagesWithTokens.length) {
+        totalTokens -= messagesWithTokens[index].tokens;
+        index++;
+    }
+
+    return currentConversation.slice(index);
 }
