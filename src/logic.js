@@ -177,6 +177,10 @@ function sendMessage() {
                 behavior: 'smooth'
         });
         });
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+    });
     }
 }
 
