@@ -37,7 +37,7 @@ Run this command in your terminal (both OS):
 ollama pull deepseek-r1
 ```
 
-Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:33b`) based on your machine's capacity. Larger models require more RAM/VRAM.
+Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:30b`) based on your machine's capacity. Larger models require more RAM/VRAM.
 
 ### 3. Clone or Download Project Files
 
@@ -55,12 +55,12 @@ Clone this project with `git clone https://github.com/danielekp/yla.git`.
 
 - Make the script executable:
     ```bash
-    chmod +x launch_script.sh
+    chmod +x scripts/run_yla.sh
     ```
 
 - Run the script:
     ```bash
-    ./launch_script.sh
+    scripts/run_yla.sh
     ```
 
     This will:
