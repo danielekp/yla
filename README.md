@@ -38,6 +38,7 @@ ollama pull deepseek-r1
 ```
 
 Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:33b`) based on your machine's capacity. Larger models require more RAM/VRAM.
+
 ### 3. Clone or Download Project Files
 
 Clone this project with `git clone https://github.com/danielekp/yla.git`.
@@ -75,10 +76,10 @@ Clone this project with `git clone https://github.com/danielekp/yla.git`.
 - Start Ollama:
 
     - Open Command Prompt and run:
-        ```cmd
-        ollama serve
-        ```
-        Leave it running here.
+    ```cmd
+    ollama serve
+    ```
+    Leave it running here.
 
 - Start the Python HTTP server:
 
@@ -87,10 +88,10 @@ Clone this project with `git clone https://github.com/danielekp/yla.git`.
     cd C:\path\to\project\
     ```
 
-        - Run:
-        ```cmd
-        python -m http.server 8000
-        ```
+    - Run:
+    ```cmd
+    python -m http.server 8000
+    ```
 
 - Open the app:
 
@@ -103,3 +104,50 @@ Clone this project with `git clone https://github.com/danielekp/yla.git`.
 > **_NOTE:_**  Browser Choice: Change the chromium command in the Ubuntu script to use Firefox, Chrome, etc. 
     Model Performance: Larger models (e.g., 33B) require ≥32GB RAM or a dedicated GPU. Start with smaller variants (7B) for lower-spec machines.
     Security: All data stays offline—no third-party servers involved.
+
+## Configuration
+
+The chatbot can be customized through the `config.js` file, allowing you to modify key settings without changing the core code.
+
+### Configuration Options
+
+Default configuration:
+```javascript
+const config = {
+    // Model settings
+    model: {
+        name: "deepseek-r1:7b",    // Model name and version
+        contextSize: 8192          // Maximum context window size
+    },
+    
+    // Chat interface settings
+    chat: {
+        welcomeMessage: "Hello! How can I help you today?",  // Initial greeting
+        maxInputHeight: 150,                                 // Max height of input box
+    },
+    
+    // API settings
+    api: {
+        endpoint: "http://localhost:11434/v1/chat/completions",
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }
+};
+```
+
+### Customization
+
+1. **Model Settings**:
+   - `name`: Change the model (e.g., "deepseek-r1:30b" for larger model)
+   - `contextSize`: Adjust based on your model's capabilities
+
+2. **Chat Interface**:
+   - `welcomeMessage`: Customize the initial greeting
+   - `maxInputHeight`: Change the maximum height of the input textarea
+
+3. **API Settings**:
+   - `endpoint`: Modify if using a different port or host
+   - `headers`: Add additional headers if needed
+
+> **_NOTE:_** After modifying the configuration, refresh your browser to apply the changes. The context size should match your model's capabilities.
