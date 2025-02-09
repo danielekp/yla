@@ -1,5 +1,5 @@
 # yla
-![yla](media/assistant.png "a title") 
+![yla](src/media/assistant.png "a title") 
 
 Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser.
 
@@ -85,7 +85,7 @@ Clone this project with `git clone https://github.com/danielekp/yla.git`.
 
     - Navigate to your project directory:
     ```cmd
-    cd C:\path\to\project\
+    cd C:\home\your_username\Documents/yla\
     ```
 
     - Run:

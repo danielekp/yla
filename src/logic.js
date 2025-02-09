@@ -53,6 +53,9 @@ function isProcessing() {
 function disableUIElements() {
     const newChatButton = document.getElementById('newChatButton');
     const conversationItems = document.querySelectorAll('.conversation-item');
+    const textAreaItem = document.getElementById('messageInput')
+
+    textAreaItem.disabled = true;
     
     if (newChatButton) {
         newChatButton.disabled = true;
@@ -71,6 +74,9 @@ function disableUIElements() {
 function enableUIElements() {
     const newChatButton = document.getElementById('newChatButton');
     const conversationItems = document.querySelectorAll('.conversation-item');
+    const textAreaItem = document.getElementById('messageInput')
+
+    textAreaItem.disabled = false;
     
     if (newChatButton) {
         newChatButton.disabled = false;
@@ -150,11 +156,6 @@ function sendMessage() {
             currentConversation.messages.push({
                 role: 'assistant',
                 content: assistantContent
-            });
-
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: 'smooth'
             });
         })
         .catch(error => {
@@ -319,7 +320,7 @@ function addLoadingIndicator() {
     loadingDiv.classList.add('loading-message');
     
     const iconImg = document.createElement('img');
-    iconImg.src = '../media/assistant.png';
+    iconImg.src = 'media/assistant.png';
     iconImg.alt = 'Assistant loading';
     iconImg.classList.add('loading-icon');
     
@@ -348,11 +349,11 @@ function toggleTheme() {
     
     if (htmlElement.classList.contains('dark-mode')) {
         htmlElement.classList.remove('dark-mode');
-        themeToggleIcon.src = '../media/moon.png';
+        themeToggleIcon.src = 'media/moon.png';
         localStorage.setItem('theme', 'light');
     } else {
         htmlElement.classList.add('dark-mode');
-        themeToggleIcon.src = '../media/sun.png';
+        themeToggleIcon.src = 'media/sun.png';
         localStorage.setItem('theme', 'dark');
     }
 }

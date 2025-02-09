@@ -23,6 +23,15 @@ function initializeEventListeners() {
     document.getElementById('downloadButton')?.addEventListener('click', downloadConversation);
 }
 
+function displayWelcomeMessage() {
+    const container = document.getElementById('chatContainer');
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', 'assistant-message');
+    messageDiv.innerHTML = marked.parse(config.chat.welcomeMessage);
+    container.appendChild(messageDiv);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
+    displayWelcomeMessage();
 });
