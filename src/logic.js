@@ -19,7 +19,8 @@ marked.setOptions({
             return hljs.highlight(code, { language: lang }).value;
         }
         return code;
-    }
+    },
+    sanitize: true
 });
 
 // Data Structure
@@ -89,29 +90,44 @@ function enableUIElements() {
     });
 }
 
+function sendMessage() {
+    const temperature = config.model.temperature;
+    const top_k = config.model.top_k;
+    const top_p = config.model.top_p;
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    input.value = '';
+    callAPI(message, temperature, top_k, top_p, true);
+}
+
 // Core Message Handling Functions
 /**
  * Sends a message to the chatbot and handles the response
  * Adds user message to the conversation, makes API call, and displays response
+ * @param {string} message - Message to be sent
+ * @param {float} temperature - Temperature
+ * @param {float} top_k - top_k
+ * @param {float} top_p - top_p
+ * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
-function sendMessage() {
-    const input = document.getElementById('messageInput');
-    const message = input.value.trim();
+function callAPI(message, temperature, top_k, top_p, add_msg) {
     const endpoint = config.api.endpoint
     const model = config.model.name
-    const num_ctx = config.model.contextSize
+    const num_ctx = config.model.num_ctx
+
     if (message && !isLoading) {
         isLoading = true;
-        addMessage(message, 'user');
-        disableUIElements();
         const currentConversation = conversations.find(c => c.id === currentConversationId);
-        currentConversation.messages.push({
-            role: 'user',
-            content: message
-        });
+        if (add_msg) {
+            addMessage(message, 'user');
+            currentConversation.messages.push({
+                role: 'user',
+                content: message
+            });
+        }
+        disableUIElements();
         
         updateConversationList();
-        input.value = '';
         
         const loadingElement = addLoadingIndicator();
 
@@ -119,7 +135,10 @@ function sendMessage() {
             model: model,
             messages: truncateConversation(currentConversation.messages, num_ctx),
             options: {
-                num_ctx: num_ctx
+                num_ctx: num_ctx,
+                temperature: temperature,
+                top_k: top_k,
+                top_p: top_p,
             },
             stream: false
         };
@@ -191,12 +210,15 @@ function sendMessage() {
  * @param {string} sender - The sender type ('user' or 'assistant')
  */
 function addMessage(text, sender) {
-    const container = document.getElementById('chatContainer');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
-    messageDiv.innerHTML = marked.parse(text);
-    container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
+    messageDiv.innerHTML = marked.parse(text, { sanitize: true });
+    
+    if (sender === 'user') {
+        addResendControls(messageDiv, text);
+    }
+    
+    document.getElementById('chatContainer').appendChild(messageDiv);
     hljs.highlightAll();
 }
 
@@ -250,6 +272,7 @@ function startNewConversation() {
         addMessage(config.chat.welcomeMessage, 'assistant');
         
         updateConversationList();
+        toggleSidebar();
     }
 }
 
@@ -437,6 +460,66 @@ textarea.addEventListener('input', () => {
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
 });
+
+/**
+ * Creates and adds parameter controls under a user message for message resending
+ * @param {HTMLElement} messageDiv - The message div element to attach controls to
+ * @param {string} messageContent - The content of the message for resending
+ * 
+ * @example
+ * const messageDiv = document.createElement('div');
+ * addResendControls(messageDiv, "What is 2+2?");
+ * 
+ * @details
+ * Controls include:
+ * - Temperature (0-2): Controls randomness
+ * - Top-k (1+): Limits token selection pool
+ * - Top-p (0-1): Nucleus sampling threshold
+ * 
+ * When resend is clicked:
+ * 1. Clears subsequent messages
+ * 2. Updates conversation history
+ * 3. Resends with new parameters
+ */
+function addResendControls(messageDiv, messageContent) {
+    const controls = document.createElement('div');
+    controls.className = 'resend-controls';
+    controls.innerHTML = `
+        <div class="parameter-controls">
+            <label>Temp: <input type="number" class="temp" value="0.7" min="0" max="2" step="0.1"></label>
+            <label>Top-k: <input type="number" class="top-k" value="40" min="1" step="1"></label>
+            <label>Top-p: <input type="number" class="top-p" value="0.90" min="0" max="1" step="0.01"></label>
+            <button class="resend-btn">
+                <img src="media/resend.png" alt="Resend" class="resend-icon">
+            </button>
+        </div>
+    `;
+
+    controls.querySelector('.resend-btn').onclick = () => {
+        const temp = parseFloat(controls.querySelector('.temp').value);
+        const topK = parseInt(controls.querySelector('.top-k').value);
+        const topP = parseFloat(controls.querySelector('.top-p').value);
+        
+        // Remove all messages after this one
+        const container = document.getElementById('chatContainer');
+        let currentNode = messageDiv.nextSibling;
+        while (currentNode) {
+            const nextNode = currentNode.nextSibling;
+            container.removeChild(currentNode);
+            currentNode = nextNode;
+        }
+        
+        // Update conversation history
+        const currentConversation = conversations.find(c => c.id === currentConversationId);
+        const messageIndex = currentConversation.messages.findIndex(m => m.content === messageContent);
+        currentConversation.messages = currentConversation.messages.slice(0, messageIndex + 1);
+        
+        // Resend with new parameters
+        callAPI(messageContent, temp, topK, topP, false);
+    };
+
+    messageDiv.appendChild(controls);
+}
 
 // Initialize
 updateConversationList();

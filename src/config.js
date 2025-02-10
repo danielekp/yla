@@ -8,13 +8,15 @@ const config = {
     // Model settings
     model: {
         name: "deepseek-r1:7b",
-        contextSize: 8192  // num_ctx
+        num_ctx: 16384, // Context Size
+        temperature: 0.7,
+        top_k: 40,
+        top_p: 0.9,
     },
     
     // Chat interface settings
     chat: {
         welcomeMessage: "Hello! How can I help you today?",
-        maxInputHeight: 150,  // maximum height for input textarea in pixels
     },
     
     // API settings

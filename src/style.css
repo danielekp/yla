@@ -215,6 +215,9 @@ padding-left: 1em;
     background-color: var(--user-message-bg);
     color: white;
     align-self: flex-end;
+    position: relative;
+    transition: padding-bottom 0.3s ease;
+    min-width: 350px;
 }
 
 .assistant-message {
@@ -387,4 +390,48 @@ padding-left: 1em;
 .conversation-item.disabled {
     opacity: 0.5;
     pointer-events: none !important;
+}
+
+.user-message:hover {
+    padding-bottom: 50px;
+}
+
+.resend-controls {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.user-message:hover .resend-controls {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.parameter-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.parameter-controls input {
+    width: 60px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.resend-btn {
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.resend-icon {
+    width: 20px;
+    height: 20px;
 }

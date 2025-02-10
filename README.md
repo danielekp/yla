@@ -1,10 +1,11 @@
 # yla
 ![yla](src/media/assistant.png "a title") 
 
-Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser.
+Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser. The following contains a basic socumentation for Ollama, please refers to the [Ollama docs](https://github.com/ollama/ollama/tree/main/docs) for more details. 
 
 ## Features
-- **Local Execution**: Data stays on your machine.
+- **No Internet Required**: Everything happens on your machine, and stays on your machine. No internet connection is required.
+- **Privacy with Local Execution**: Data stays on your machine.
 - **No AI Provider filters**: Most of the internet AI provider have plenty of filters between AI output and your chat.
 - **Minimal Setup**: No extra frameworks needed.
 - **Cross-Platform**: Works on Ubuntu and Windows.
@@ -37,7 +38,7 @@ Run this command in your terminal (both OS):
 ollama pull deepseek-r1
 ```
 
-Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:30b`) based on your machine's capacity. Larger models require more RAM/VRAM.
+Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:32b`) based on your machine's capacity. Larger models require more RAM/VRAM.
 
 ### 3. Clone or Download Project Files
 
@@ -117,13 +118,15 @@ const config = {
     // Model settings
     model: {
         name: "deepseek-r1:7b",    // Model name and version
-        contextSize: 8192          // Maximum context window size
+        num_ctx: 8192,          // Maximum context window size
+        temperature: 0.8,           // The higher, the more creative the answer
+        top_k: 40,              // Reduces the probability of generating nonsense
+        top_p: 0.9,             // Higher value leads to more diverse responses
     },
     
     // Chat interface settings
     chat: {
         welcomeMessage: "Hello! How can I help you today?",  // Initial greeting
-        maxInputHeight: 150,                                 // Max height of input box
     },
     
     // API settings
