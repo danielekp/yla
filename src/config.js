@@ -7,7 +7,7 @@
 const config = {
     // Model settings
     model: {
-        name: "deepseek-r1:7b",
+        name: "deepseek-32b_large_context",
         num_ctx: 16384, // Context Size
         temperature: 0.7,
         top_k: 40,

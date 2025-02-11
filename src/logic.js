@@ -135,7 +135,6 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
             model: model,
             messages: truncateConversation(currentConversation.messages, num_ctx),
             options: {
-                num_ctx: num_ctx,
                 temperature: temperature,
                 top_k: top_k,
                 top_p: top_p,
