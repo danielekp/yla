@@ -117,8 +117,8 @@ Default configuration:
 const config = {
     // Model settings
     model: {
-        name: "deepseek-r1:7b",    // Model name and version
-        num_ctx: 8192,          // Maximum context window size
+        name: "Yla",    // Model name and version (deepseek-r1 for the default model)
+        num_ctx: 65536,          // Maximum context window size
         temperature: 0.8,           // The higher, the more creative the answer
         top_k: 40,              // Reduces the probability of generating nonsense
         top_p: 0.9,             // Higher value leads to more diverse responses
@@ -142,7 +142,7 @@ const config = {
 ### Customization
 
 1. **Model Settings**:
-   - `name`: Change the model (e.g., "deepseek-r1:30b" for larger model)
+   - `name`: Change the model (e.g., "deepseek-r1:32b" for larger model, or Yla for custom model)
    - `contextSize`: Adjust based on your model's capabilities
 
 2. **Chat Interface**:
