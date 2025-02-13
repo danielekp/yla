@@ -1,14 +1,7 @@
-Per far partire ollama e python server containers:
+Per far partire ollama e python server containers, da root del progetto:
 ```
-docker compose up
+docker compose up -d --build
 ```
-
-Ricordarsi di scaricare deepseek-r1:1.5b dopo aver inizializzato ollama:
-```
-docker exec -it yla_ollama bash
-ollama pull deepseek-r1:1.5b
-```
-(questa cosa la si potrebbe automatizzare) 
 
 Connessione sicura in caso l'app venga fatta girare su un server (e si ha accesso ssh al server):
 ```
