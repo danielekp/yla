@@ -1,3 +1,23 @@
+Per far partire ollama e python server containers:
+```
+docker compose up
+```
+
+Ricordarsi di scaricare deepseek-r1:1.5b dopo aver inizializzato ollama:
+```
+docker exec -it yla_ollama bash
+ollama pull deepseek-r1:1.5b
+```
+(questa cosa la si potrebbe automatizzare) 
+
+Connessione sicura in caso l'app venga fatta girare su un server (e si ha accesso ssh al server):
+```
+ssh -L 8000:localhost:8000 user@server
+```
+A questo punto si può accedere all'applicazione da localhost:8000/src/yla.html
+
+---
+
 # yla
 ![yla](src/media/assistant.png "a title") 
 

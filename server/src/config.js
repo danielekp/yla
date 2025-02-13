@@ -7,7 +7,7 @@
 const config = {
     // Model settings
     model: {
-	    name: "Yla",
+	    name: "deepseek-r1:1.5b",
         num_ctx: 65536, // Context Size
         temperature: 0.7,
         top_k: 40,
