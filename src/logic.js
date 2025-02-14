@@ -1,12 +1,5 @@
 import config from './config.js';
-
-export {
-    sendMessage,
-    startNewConversation,
-    toggleSidebar,
-    toggleTheme,
-    downloadConversation
-};
+import { selectedModelSettings } from './modelSelector.js';
 
 // Configuration for Markdown Syntax
 /**
@@ -90,6 +83,9 @@ function enableUIElements() {
     });
 }
 
+/**
+ * Get message from textarea and calls the API call function
+ */
 function sendMessage() {
     const temperature = config.model.temperature;
     const top_k = config.model.top_k;
@@ -111,9 +107,13 @@ function sendMessage() {
  * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
 function callAPI(message, temperature, top_k, top_p, add_msg) {
-    const endpoint = config.api.endpoint
-    const model = config.model.name
-    const num_ctx = config.model.num_ctx
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
+    const endpoint = config.api.endpoint;
+    const model = selectedModelSettings.name;
+    const num_ctx = selectedModelSettings.num_ctx;
     
     if (message && !isLoading) {
         isLoading = true;
@@ -254,6 +254,10 @@ function addEnhancedMessage(thinkText, responseText) {
  * Creates a new conversation object and updates the UI
  */
 function startNewConversation() {
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
     if (!isLoading) {
         const newConversation = {
             id: Date.now(),
@@ -269,9 +273,12 @@ function startNewConversation() {
         const container = document.getElementById('chatContainer');
         container.innerHTML = '';
         addMessage(config.chat.welcomeMessage, 'assistant');
-        
+
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('active')) {
+            sidebar.classList.add('active');
+        }
         updateConversationList();
-        toggleSidebar();
     }
 }
 
@@ -453,13 +460,6 @@ function truncateConversation(currentConversation, num_ctx) {
     return currentConversation.slice(index);
 }
 
-// Event Listeners
-const textarea = document.getElementById('messageInput');
-textarea.addEventListener('input', () => {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
-});
-
 /**
  * Creates and adds parameter controls under a user message for message resending
  * @param {HTMLElement} messageDiv - The message div element to attach controls to
@@ -562,5 +562,13 @@ function addResendControls(messageDiv, messageContent) {
     messageDiv.appendChild(controls);
 }
 
-// Initialize
-updateConversationList();
+window.startNewConversation = startNewConversation;
+
+export {
+    sendMessage,
+    startNewConversation,
+    toggleSidebar,
+    toggleTheme,
+    downloadConversation,
+    updateConversationList
+};

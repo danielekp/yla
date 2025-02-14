@@ -1,5 +1,6 @@
-import { sendMessage, startNewConversation, toggleSidebar, toggleTheme, downloadConversation } from './logic.js';
+import { sendMessage, startNewConversation, toggleSidebar, toggleTheme, downloadConversation, updateConversationList } from './logic.js';
 import config from './config.js';
+import { renderModels } from './modelSelector.js'
 
 function initializeEventListeners() {
 
@@ -23,15 +24,7 @@ function initializeEventListeners() {
     document.getElementById('downloadButton')?.addEventListener('click', downloadConversation);
 }
 
-function displayWelcomeMessage() {
-    const container = document.getElementById('chatContainer');
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', 'assistant-message');
-    messageDiv.innerHTML = marked.parse(config.chat.welcomeMessage);
-    container.appendChild(messageDiv);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
-    displayWelcomeMessage();
+    renderModels();
 });
