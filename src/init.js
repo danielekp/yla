@@ -1,5 +1,4 @@
-import { sendMessage, startNewConversation, toggleSidebar, toggleTheme, downloadConversation, updateConversationList } from './logic.js';
-import config from './config.js';
+import { sendMessage, startNewConversation, toggleSidebar, toggleTheme, downloadConversation } from './logic.js';
 import { renderModels } from './modelSelector.js'
 
 function initializeEventListeners() {
@@ -14,7 +13,9 @@ function initializeEventListeners() {
     
     textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, config.chat.maxInputHeight) + "px";
+        const newHeight = Math.min(textarea.scrollHeight, 150);
+        textarea.style.height = `${newHeight}px`;
+        textarea.scrollTop = textarea.scrollHeight;
     });
 
     document.getElementById('sendButton')?.addEventListener('click', sendMessage);

@@ -7,7 +7,7 @@
 const config = {
     // Model settings
     models: [{
-	    name: "Yla",
+	    name: "Yla:latest",
         num_ctx: 65536, // Context Size
         temperature: 0.7,
         top_k: 40,
@@ -23,9 +23,17 @@ const config = {
         top_p: 0.9,
         size: "4.2 GB",
     },
+    {
+	    name: "llama",
+        num_ctx: 65536, // Context Size
+        temperature: 0.7,
+        top_k: 40,
+        top_p: 0.9,
+        size: "4.2 GB",
+    },
     ],
     
-    // Chat interface settings
+    // Chat first message
     chat: {
         welcomeMessage: "Hello! How can I help you today?",
     },
@@ -33,6 +41,7 @@ const config = {
     // API settings
     api: {
         endpoint: "http://localhost:11434/v1/chat/completions",
+        available_models: "http://localhost:11434/v1/models",
         headers: {
             'Content-Type': 'application/json'
         }

@@ -21,25 +21,12 @@ marked.setOptions({
  * Stores all conversations with their messages
  * @type {Array<Object>}
  */
-let conversations = [{
-    id: Date.now(),
-    messages: [{
-        role: 'assistant',
-        content: config.chat.welcomeMessage
-    }]
-}];
-let currentConversationId = conversations[0].id;
+let conversations = [];
 
 // Add loading state
 let isLoading = false;
 
-/**
- * Checks if the chatbot is currently processing a message
- * @returns {boolean} True if the chatbot is loading, false otherwise
- */
-function isProcessing() {
-    return isLoading;
-}
+let currentConversationId;
 
 /**
  * Disables chat-related buttons and UI elements
@@ -87,9 +74,13 @@ function enableUIElements() {
  * Get message from textarea and calls the API call function
  */
 function sendMessage() {
-    const temperature = config.model.temperature;
-    const top_k = config.model.top_k;
-    const top_p = config.model.top_p;
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
+    const temperature = selectedModelSettings.temperature;
+    const top_k = selectedModelSettings.top_k;
+    const top_p = selectedModelSettings.top_p;
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
     input.value = '';
@@ -190,7 +181,6 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
         }).finally(() => {
             isLoading = false;
             enableUIElements();
-            textarea.style.height = '50px';
             window.scrollTo({
                 top: document.body.scrollHeight,
                 behavior: 'smooth'
@@ -266,7 +256,6 @@ function startNewConversation() {
                 content: config.chat.welcomeMessage
             }]
         };
-    
         conversations.unshift(newConversation);
         currentConversationId = newConversation.id;
         
@@ -385,24 +374,6 @@ function toggleTheme() {
         themeToggleIcon.src = 'media/sun.png';
         localStorage.setItem('theme', 'dark');
     }
-}
-
-// Utility Functions
-/**
- * Concatenates all messages in the current conversation
- * @returns {string} Formatted conversation text
- */
-function concatenateMessages() {
-    const currentConversation = conversations.find(c => c.id === currentConversationId);
-    if (!currentConversation) return;
-
-    let content = '';
-    currentConversation.messages.forEach(msg => {
-        const prefix = msg.role === 'user' ? 'User: ' : 'Assistant: ';
-        content += prefix + msg.content + '\n\n';
-    });
-
-    return content;
 }
 
 /**
