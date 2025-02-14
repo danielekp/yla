@@ -1,12 +1,5 @@
 import config from './config.js';
-
-export {
-    sendMessage,
-    startNewConversation,
-    toggleSidebar,
-    toggleTheme,
-    downloadConversation
-};
+import { selectedModelSettings } from './modelSelector.js';
 
 // Configuration for Markdown Syntax
 /**
@@ -28,25 +21,12 @@ marked.setOptions({
  * Stores all conversations with their messages
  * @type {Array<Object>}
  */
-let conversations = [{
-    id: Date.now(),
-    messages: [{
-        role: 'assistant',
-        content: config.chat.welcomeMessage
-    }]
-}];
-let currentConversationId = conversations[0].id;
+let conversations = [];
 
 // Add loading state
 let isLoading = false;
 
-/**
- * Checks if the chatbot is currently processing a message
- * @returns {boolean} True if the chatbot is loading, false otherwise
- */
-function isProcessing() {
-    return isLoading;
-}
+let currentConversationId;
 
 /**
  * Disables chat-related buttons and UI elements
@@ -90,10 +70,17 @@ function enableUIElements() {
     });
 }
 
+/**
+ * Get message from textarea and calls the API call function
+ */
 function sendMessage() {
-    const temperature = config.model.temperature;
-    const top_k = config.model.top_k;
-    const top_p = config.model.top_p;
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
+    const temperature = selectedModelSettings.temperature;
+    const top_k = selectedModelSettings.top_k;
+    const top_p = selectedModelSettings.top_p;
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
     input.value = '';
@@ -111,9 +98,13 @@ function sendMessage() {
  * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
 function callAPI(message, temperature, top_k, top_p, add_msg) {
-    const endpoint = config.api.endpoint
-    const model = config.model.name
-    const num_ctx = config.model.num_ctx
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
+    const endpoint = config.api.endpoint;
+    const model = selectedModelSettings.name;
+    const num_ctx = selectedModelSettings.num_ctx;
     
     if (message && !isLoading) {
         isLoading = true;
@@ -190,7 +181,6 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
         }).finally(() => {
             isLoading = false;
             enableUIElements();
-            textarea.style.height = '50px';
             window.scrollTo({
                 top: document.body.scrollHeight,
                 behavior: 'smooth'
@@ -254,6 +244,10 @@ function addEnhancedMessage(thinkText, responseText) {
  * Creates a new conversation object and updates the UI
  */
 function startNewConversation() {
+    if (!selectedModelSettings){
+        console.log("Select a model!")
+        return;
+    }
     if (!isLoading) {
         const newConversation = {
             id: Date.now(),
@@ -262,16 +256,18 @@ function startNewConversation() {
                 content: config.chat.welcomeMessage
             }]
         };
-    
         conversations.unshift(newConversation);
         currentConversationId = newConversation.id;
         
         const container = document.getElementById('chatContainer');
         container.innerHTML = '';
         addMessage(config.chat.welcomeMessage, 'assistant');
-        
+
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('active')) {
+            sidebar.classList.add('active');
+        }
         updateConversationList();
-        toggleSidebar();
     }
 }
 
@@ -380,24 +376,6 @@ function toggleTheme() {
     }
 }
 
-// Utility Functions
-/**
- * Concatenates all messages in the current conversation
- * @returns {string} Formatted conversation text
- */
-function concatenateMessages() {
-    const currentConversation = conversations.find(c => c.id === currentConversationId);
-    if (!currentConversation) return;
-
-    let content = '';
-    currentConversation.messages.forEach(msg => {
-        const prefix = msg.role === 'user' ? 'User: ' : 'Assistant: ';
-        content += prefix + msg.content + '\n\n';
-    });
-
-    return content;
-}
-
 /**
  * Downloads the current conversation as a text file
  */
@@ -452,13 +430,6 @@ function truncateConversation(currentConversation, num_ctx) {
 
     return currentConversation.slice(index);
 }
-
-// Event Listeners
-const textarea = document.getElementById('messageInput');
-textarea.addEventListener('input', () => {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
-});
 
 /**
  * Creates and adds parameter controls under a user message for message resending
@@ -562,5 +533,13 @@ function addResendControls(messageDiv, messageContent) {
     messageDiv.appendChild(controls);
 }
 
-// Initialize
-updateConversationList();
+window.startNewConversation = startNewConversation;
+
+export {
+    sendMessage,
+    startNewConversation,
+    toggleSidebar,
+    toggleTheme,
+    downloadConversation,
+    updateConversationList
+};
