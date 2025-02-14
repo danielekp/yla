@@ -29,7 +29,7 @@ Download from [Ollama Windows Preview](https://ollama.com/download)
 ```bash
 # Choose based on your hardware
 ollama pull deepseek-r1:7b   # 7B parameter version
-ollama pull deepseek-r1:13b  # Medium-sized model
+ollama pull deepseek-r1:32b  # Medium-sized model
 ```
 
 ### 3. Launch Application
@@ -75,15 +75,25 @@ models: [
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
-        systemMessage: "Technical expert with markdown formatting",
-        description: "Specialized in detailed technical explanations",
+        systemMessage: "You are an expert technical assistant. 
+Respond in markdown format with detailed explanations.",
         size: "4.1GB"
     }
 ]
 ```
+
+### Configuration Reference
+| Field           | Description                                  | Example       |
+|-----------------|----------------------------------------------|---------------|
+| `name`          | Ollama model name (exact match required). Add version in case of custom models     | "my-expert:latest"   |
+| `num_ctx`       | Context window size (tokens)                 | 32768         |
+| `systemMessage` | Hidden behavior instructions. It does not affect the model, but it is used to show, in case of custom model, the SYSTEM message defined in the creation phase               | "You are an expert technical assistant. 
+Respond in markdown format with detailed explanations."  |
+| `temperature`   | Response creativity                          | 0.3-1.8       |
+
 > **_NOTE:_**  For custom models remember to add the version (_:latest_ by default) in the config.
 
-## Configuration Guide
+## Configuration Example
 ```javascript
 // config.js
 const config = {
@@ -95,7 +105,6 @@ const config = {
             top_k: 40,              // 1-100
             top_p: 0.9,              // 0-1
             systemMessage: "Friendly general assistant",
-            description: "Balanced performance model",
             size: "4.1GB"
         }
     ],
@@ -114,15 +123,6 @@ const config = {
     }
 };
 ```
-
-### Configuration Reference
-| Field           | Description                                  | Example       |
-|-----------------|----------------------------------------------|---------------|
-| `name`          | Ollama model name (exact match required). Add version in case of custom models     | "my-expert:latest"   |
-| `num_ctx`       | Context window size (tokens)                 | 32768         |
-| `systemMessage` | Hidden behavior instructions. It does not affect the model, but it is used to show, in case of custom model, the SYSTEM message defined in the creation phase               | "Be concise"  |
-| `temperature`   | Response creativity                          | 0.3-1.8       |
-| `description`   | UI display text                              | "Coding spec" |
 
 ## Model Management
 - **Validation**: App checks installed models on launch
