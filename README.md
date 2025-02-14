@@ -1,7 +1,7 @@
 # yla
 ![yla](src/media/assistant.png "a title") 
 
-Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser. The following contains a basic socumentation for Ollama, please refers to the [Ollama docs](https://github.com/ollama/ollama/tree/main/docs) for more details. 
+Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser. The following contains a basic documentation for Ollama, please refer to the [Ollama docs](https://github.com/ollama/ollama/tree/main/docs) for more details. 
 
 ## Features
 - **No Internet Required**: Everything happens on your machine, and stays on your machine. No internet connection is required.
