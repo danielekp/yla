@@ -12,139 +12,124 @@ A questo punto si può accedere all'applicazione da localhost:8000/src/yla.html
 ---
 
 # yla
-![yla](src/media/assistant.png "a title") 
+![yla](src/media/assistant.png "YLA Interface Preview") 
 
-Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React—just Ollama, a simple HTTP server, and a browser. The following contains a basic socumentation for Ollama, please refers to the [Ollama docs](https://github.com/ollama/ollama/tree/main/docs) for more details. 
+Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React - just Ollama, a simple HTTP server, and a browser.
+
+Evaluate and experiment LLM freely, **own your AI**.
 
 ## Features
-- **No Internet Required**: Everything happens on your machine, and stays on your machine. No internet connection is required.
-- **Privacy with Local Execution**: Data stays on your machine.
-- **No AI Provider filters**: Most of the internet AI provider have plenty of filters between AI output and your chat.
-- **Minimal Setup**: No extra frameworks needed.
-- **Cross-Platform**: Works on Ubuntu and Windows.
-- **Download Chats**: There isn't a persistent storage, but you can download the chat.
+- **Local AI Control**: Select from multiple configured models
+- **Privacy First**: All processing happens on your machine
+- **No Cloud Dependencies**: Works completely offline
+- **Model Validation**: Auto-check against installed Ollama models
+- **Custom Personalities**: Create specialized assistants with Modelfiles
+- **Try Different Parameters**: You can resend a message changing temperature, top_p, and top_k
 
-## Prerequisites
-- **Ollama**: Installed and running.
-- **deepseek-r1 Model**: Downloaded locally (choose parameters based on your machine's RAM/GPU).
-- **Python 3**: For the HTTP server.
-- **Chromium Browser**: Default in the script (changeable).
 
-## Installation Instructions
+## Installation
 
 ### 1. Install Ollama
-#### **Ubuntu**:
+#### **Linux**:
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 #### **Windows**:
+Download from [Ollama Windows Preview](https://ollama.com/download)
 
-- Download the installer from Ollama Windows Preview.
-
-- Run the .exe and follow the prompts.
-
-### 2. Download the Model
-
-Run this command in your terminal (both OS):
+### 2. Setup Base Models
 ```bash
-ollama pull deepseek-r1
+# Choose based on your hardware
+ollama pull deepseek-r1:7b   # 7B parameter version
+ollama pull deepseek-r1:32b  # Medium-sized model
 ```
 
-Choose a variant (e.g., `deepseek-r1:7b`, `deepseek-r1:32b`) based on your machine's capacity. Larger models require more RAM/VRAM.
+### 3. Launch Application
+#### **Linux**:
+```bash
+chmod +x scripts/run_yla.sh
+./scripts/run_yla.sh
+```
 
-### 3. Clone or Download Project Files
+#### **Windows**:
+```cmd
+ollama serve
+python -m http.server 8000
+# Open http://localhost:8000/src/yla.html
+```
 
-Clone this project with `git clone https://github.com/danielekp/yla.git`.
+## Custom Model Configuration
 
-### 4. Launch the Application
+Create and use specialized models using Ollama's Modelfiles:
 
-#### **Ubuntu**:
+1. **Create a Modelfile** in the `custom_models` directory:
+```bash
+# Example technical-assistant.txt
+FROM deepseek-r1:7b
+SYSTEM """
+You are an expert technical assistant. 
+Respond in markdown format with detailed explanations.
+"""
+PARAMETER num_ctx 32768
+```
 
-- Edit the launch script:
+2. **Build your custom model**:
+```bash
+ollama create my-expert -f ./custom_models/technical-assistant.txt
+```
 
-    - Update PROJECT_DIR to your project path (e.g., `/home/your_username/Documents/yla/`).
-
-    - To use a browser other than `Chromium`, replace chromium with firefox or google-chrome.
-
-- Make the script executable:
-    ```bash
-    chmod +x scripts/run_yla.sh
-    ```
-
-- Run the script:
-    ```bash
-    scripts/run_yla.sh
-    ```
-
-    This will:
-
-    - Start Ollama and the Python server.
-
-    - Open the app in Chromium.
-
-    - Shut down servers automatically when the browser closes.
-
-#### **Windows** (Manual Steps):
-
-- Start Ollama:
-
-    - Open Command Prompt and run:
-    ```cmd
-    ollama serve
-    ```
-    Leave it running here.
-
-- Start the Python HTTP server:
-
-    - Navigate to your project directory:
-    ```cmd
-    cd C:\home\your_username\Documents/yla\
-    ```
-
-    - Run:
-    ```cmd
-    python -m http.server 8000
-    ```
-
-- Open the app:
-
-    - Launch your browser and go to http://localhost:8000/src/yla.html.
-
-- Stop Servers Manually:
-
-    - Close the Command Prompt windows running Ollama and Python.
-
-> **_NOTE:_**  Browser Choice: Change the chromium command in the Ubuntu script to use Firefox, Chrome, etc. 
-    Model Performance: Larger models (e.g., 33B) require ≥32GB RAM or a dedicated GPU. Start with smaller variants (7B) for lower-spec machines.
-    Security: All data stays offline—no third-party servers involved.
-
-## Configuration
-
-The chatbot can be customized through the `config.js` file, allowing you to modify key settings without changing the core code.
-
-### Configuration Options
-
-Default configuration:
+3. **Update config.js**:
 ```javascript
+models: [
+    {
+        name: "my-expert:latest",
+        num_ctx: 32768,
+        temperature: 0.7,
+        top_k: 40,
+        top_p: 0.9,
+        systemMessage: "You are an expert technical assistant. 
+Respond in markdown format with detailed explanations.",
+        size: "4.1GB"
+    }
+]
+```
+
+### Configuration Reference
+| Field           | Description                                  | Example       |
+|-----------------|----------------------------------------------|---------------|
+| `name`          | Ollama model name (exact match required). Add version in case of custom models     | "my-expert:latest"   |
+| `num_ctx`       | Context window size (tokens)                 | 32768         |
+| `systemMessage` | Hidden behavior instructions. It does not affect the model, but it is used to show, in case of custom model, the SYSTEM message defined in the creation phase               | "You are an expert technical assistant. 
+Respond in markdown format with detailed explanations."  |
+| `temperature`   | Response creativity                          | 0.3-1.8       |
+
+> **_NOTE:_**  For custom models remember to add the version (_:latest_ by default) in the config.
+
+## Configuration Example
+```javascript
+// config.js
 const config = {
-    // Model settings
-    model: {
-        name: "Yla",    // Model name and version (deepseek-r1 for the default model)
-        num_ctx: 65536,          // Maximum context window size
-        temperature: 0.8,           // The higher, the more creative the answer
-        top_k: 40,              // Reduces the probability of generating nonsense
-        top_p: 0.9,             // Higher value leads to more diverse responses
-    },
-    
-    // Chat interface settings
+    models: [
+        {
+            name: "Yla:latest",          // Must match Ollama model name
+            num_ctx: 65536,         // Context window size
+            temperature: 0.7,       // 0-2 (0=precise, 2=creative)
+            top_k: 40,              // 1-100
+            top_p: 0.9,              // 0-1
+            systemMessage: "Friendly general assistant",
+            size: "4.1GB"
+        }
+    ],
+
+    // Chat first message
     chat: {
-        welcomeMessage: "Hello! How can I help you today?",  // Initial greeting
+        welcomeMessage: "Hello! How can I help you today?",
     },
     
-    // API settings
     api: {
         endpoint: "http://localhost:11434/v1/chat/completions",
+        available_models: "http://localhost:11434/v1/models",
         headers: {
             'Content-Type': 'application/json'
         }
@@ -152,18 +137,23 @@ const config = {
 };
 ```
 
-### Customization
+## Model Management
+- **Validation**: App checks installed models on launch
+- **Selection**: Choose model from initial carousel
+- **Persistence**: Selected model remembered until page refresh
+- **Visual Feedback**: 
+  - ✅ Available models - full color, clickable
+  - ⚠️ Missing models - grayed out with warning
 
-1. **Model Settings**:
-   - `name`: Change the model (e.g., "deepseek-r1:32b" for larger model, or Yla for custom model)
-   - `contextSize`: Adjust based on your model's capabilities
+> **Note**: Model names in config.js must exactly match Ollama model names. Use `ollama list` to verify installed models.
 
-2. **Chat Interface**:
-   - `welcomeMessage`: Customize the initial greeting
-   - `maxInputHeight`: Change the maximum height of the input textarea
+## Troubleshooting
+**Model Not Found**:
+1. Verify model name matches Ollama's list
+2. Check Ollama is running: `ollama serve`
+3. Ensure model files are in `custom_models` directory
 
-3. **API Settings**:
-   - `endpoint`: Modify if using a different port or host
-   - `headers`: Add additional headers if needed
-
-> **_NOTE:_** After modifying the configuration, refresh your browser to apply the changes. The context size should match your model's capabilities.
+**Performance Issues**:
+- Reduce `num_ctx` for smaller context windows
+- Use smaller model variants (e.g., 7B instead of 32B)
+- Close other memory-intensive applications
