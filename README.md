@@ -1,16 +1,3 @@
-Per far partire ollama e python server containers, da root del progetto:
-```
-docker compose up -d --build
-```
-
-Connessione sicura in caso l'app venga fatta girare su un server (e si ha accesso ssh al server):
-```
-ssh -L 8000:localhost:8000 user@server
-```
-A questo punto si può accedere all'applicazione da localhost:8000/src/yla.html
-
----
-
 # yla
 ![yla](src/media/assistant.png "YLA Interface Preview") 
 

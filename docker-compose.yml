@@ -6,7 +6,7 @@ services:
       - "11434:11434"
     volumes:
       - ollama:/root/.ollama
-      - ./ollama_utils/entrypoint.sh:/entrypoint.sh
+      - ./docker/ollama.entrypoint.sh:/entrypoint.sh
     entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
     deploy:
       resources:
@@ -17,7 +17,9 @@ services:
               capabilities: [gpu]
   
   server:
-    build: ./server
+    build:
+      context: ./
+      dockerfile: ./docker/server.Dockerfile
     container_name: yla_server
     ports:
       - "8000:8000"

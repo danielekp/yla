@@ -5,7 +5,7 @@ FROM python:3.9-slim
 WORKDIR /workspace
 
 # Copy the HTML files into the container
-COPY . .
+COPY ./src ./src
 
 # Expose the port
 EXPOSE 8000
