@@ -296,13 +296,39 @@ padding-left: 1em;
     }
 }
 
+.think-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.think-loading .loading-icon {
+    width: 24px;
+    height: 24px;
+    animation: rotate 2s linear infinite;
+}
+
+.think-loading .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+/* Update existing loading-icon animation if needed */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* You might want to update the message-think styles for better alignment */
 .message-think {
     background-color: var(--think-message-bg);
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-style: italic;
-    opacity: 0.7;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
+    min-height: 45px; /* Ensures consistent height when loading */
 }
 
 .message-response {
