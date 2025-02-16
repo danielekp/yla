@@ -82,6 +82,7 @@ function sendMessage() {
     const top_k = selectedModelSettings.top_k;
     const top_p = selectedModelSettings.top_p;
     const input = document.getElementById('messageInput');
+    input.style.height = `50px`;
     const message = input.value.trim();
     input.value = '';
     callAPI(message, temperature, top_k, top_p, true);
