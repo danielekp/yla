@@ -611,9 +611,7 @@ function addResendControls(messageDiv, messageContent) {
         let currentNode = messageDiv.nextSibling;
         while (currentNode) {
             const nextNode = currentNode.nextSibling;
-            if (!nextNode.hasClass('loadingMessage')) {
-                currentNode.remove();
-            }
+            currentNode.remove();
             currentNode = nextNode;
         }
         
