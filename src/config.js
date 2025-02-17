@@ -35,12 +35,12 @@ const config = {
         size: "4.7 GB",
     },
     {
-	    name: "llama",
+	    name: "llama3.2:1b",
         num_ctx: 65536, // Context Size
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
-        size: "4.2 GB",
+        size: "1.8 GB",
     },
     ],
     
