@@ -561,14 +561,19 @@ padding-left: 1em;
     border-radius: 10px;
     background: var(--bg-color);
     position: fixed;
-    top: 50%;
+    top: 120px;       /* Fixed distance from top */
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);  /* Only center horizontally */
     z-index: 100;
     margin: 0;
     width: 80%;
-    max-width: 600px;
+    max-width: 800px;
     padding: 1rem;
+    /* Optional: Add min-height if needed */
+    min-height: 100px;
+    /* Optional: Prevent bottom overflow */
+    max-height: calc(100vh - 140px); /* 200px top + 20px margin */
+    overflow-y: auto;
 }
 
 .model-card {

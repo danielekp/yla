@@ -99,6 +99,10 @@ function sendMessage() {
  * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
 function callAPI(message, temperature, top_k, top_p, add_msg) {
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+    });
     if (!selectedModelSettings){
         console.log("Select a model!")
         return;
@@ -370,17 +374,13 @@ function startNewConversation() {
     if (!isLoading) {
         const newConversation = {
             id: Date.now(),
-            messages: [{
-                role: 'assistant',
-                content: config.chat.welcomeMessage
-            }]
+            messages: []
         };
         conversations.unshift(newConversation);
         currentConversationId = newConversation.id;
         
         const container = document.getElementById('chatContainer');
         container.innerHTML = '';
-        addMessage(config.chat.welcomeMessage, 'assistant');
 
         const sidebar = document.getElementById('sidebar');
         if (!sidebar.classList.contains('active')) {
