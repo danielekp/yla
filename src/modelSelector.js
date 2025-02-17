@@ -2,6 +2,17 @@ import config from './config.js';
 
 export let selectedModelSettings = null;
 
+/**
+ * Checks the availability of models by fetching data from an API.
+ *
+ * This function sends a request to the specified API endpoint to retrieve available models,
+ * compares them against a list of configured models, and updates each model object with an
+ * 'available' property indicating its presence in the fetched data.
+ *
+ * @returns {Array} An array of objects representing the models. Each object includes all
+ *                  properties from the original configuration and an additional 'available'
+ *                  boolean property.
+ */
 async function checkModelAvailability() {
     try {
         const response = await fetch(config.api.available_models);
