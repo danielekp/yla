@@ -4,16 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local AI Assistant</title>
+
+    <!-- Local style definition -->
     <link href="style.css" rel="stylesheet" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <!-- Local Markdown parser -->
+    <script src="vendor/marked/marked.min.js"></script>
+    
+    <!-- Local syntax highlighting -->
+    <link rel="stylesheet" href="vendor/highlightjs/styles/default.min.css">
+    <script src="vendor/highlightjs/highlight.min.js"></script>    
 </head>
 <body>
     <div class="header">
         <div class="header-title">
             <img src="media/assistant.png" alt="Assistant Icon" class="header-icon">
             <h1>YLA, Your Local AI Assistant</h1>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+            <div class="status-dot"></div>
+            <span class="status-text">Connecting...</span>
         </div>
         <div class="header-buttons">
             <button class="theme-toggle-button" id="themeToggleButton">

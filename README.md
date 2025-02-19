@@ -87,8 +87,7 @@ Respond in markdown format with detailed explanations.",
 |-----------------|----------------------------------------------|---------------|
 | `name`          | Ollama model name (exact match required). Add version in case of custom models     | "my-expert:latest"   |
 | `num_ctx`       | Context window size (tokens)                 | 32768         |
-| `systemMessage` | Hidden behavior instructions. It does not affect the model, but it is used to show, in case of custom model, the SYSTEM message defined in the creation phase               | "You are an expert technical assistant. 
-Respond in markdown format with detailed explanations."  |
+| `systemMessage` | Hidden behavior instructions. It does not affect the model, but it is used to show, in case of custom model, the SYSTEM message defined in the creation phase               | "You are an expert technical assistant. Respond in markdown format with detailed explanations."  |
 | `temperature`   | Response creativity                          | 0.3-1.8       |
 
 > **_NOTE:_**  For custom models remember to add the version (_:latest_ by default) in the config.
