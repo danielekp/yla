@@ -167,7 +167,7 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                 // Add content to appropriate section
                 if (currentSection === 'think') {
                     thinkContent += content;
-                    thinkDiv.innerHTML = marked.parse(thinkContent);
+                    thinkDiv.innerHTML = thinkContent;
                 } else {
                     responseContent += content;
                     responseDiv.innerHTML = marked.parse(responseContent);
@@ -284,7 +284,6 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
         })
         .catch(error => {
             console.error('Error:', error);
-            loadingElement.remove();
             messageContainer.remove();
             
             const errorMessage = 'Sorry, I encountered an error. Please try again.';
@@ -400,7 +399,8 @@ function loadConversation(conversationId) {
                     }
                 }
             });
-            
+            const input = document.getElementById('messageInput');
+            input.value = ''
             updateConversationList();
         }
     }

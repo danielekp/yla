@@ -1,9 +1,11 @@
 # yla
-![yla](src/media/assistant.png "YLA Interface Preview") 
+![yla](src/media/assistant.png "YLA") 
 
 Run your own AI chatbot locally with Ollama, ensuring data privacy and avoiding cloud breaches. This lightweight setup requires no frameworks like React - just Ollama, a simple HTTP server, and a browser.
 
 Evaluate and experiment LLM freely, **own your AI**.
+
+![yla](src/media/app-screen.png "YLA Interface Preview") 
 
 ## Features
 - **Local AI Control**: Select from multiple configured models
