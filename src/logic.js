@@ -1,21 +1,6 @@
 import config from './config.js';
 import { selectedModelSettings } from './modelSelector.js';
 
-// Configuration for Markdown Syntax
-/**
- * Configures marked.js options for syntax highlighting
- * @param {Object} options - Configuration options for marked
- */
-marked.setOptions({
-    highlight: function(code, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-            return hljs.highlight(code, { language: lang }).value;
-        }
-        return code;
-    },
-    sanitize: true
-});
-
 // Data Structure
 /**
  * Stores all conversations with their messages
@@ -170,7 +155,7 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                 // Remove the opening tag
                 const withoutOpenTag = content.replace('<think>', '');
                 thinkContent += withoutOpenTag;
-                thinkDiv.innerHTML = marked.parse(thinkContent);
+                thinkDiv.innerHTML = thinkContent;
             } else if (content.includes('</think>')) {
                 currentSection = 'response';
                 // Remove the closing tag and any think content

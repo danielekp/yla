@@ -66,17 +66,6 @@ async function checkAPIConnection() {
         });
 
         if (!pingResponse.ok) throw new Error('Server error');
-        
-        // Use fetchWithTimeout for the test request
-        const testResponse = await fetchWithTimeout(config.api.endpoint, {
-            method: 'POST',
-            headers: config.api.headers,
-            body: JSON.stringify({
-                model: 'dummy',
-                messages: [{role: "user", content: "ping"}]
-            }),
-            timeout: 5000
-        });
 
         statusElement.classList.remove('error');
         statusElement.classList.add('connected');
@@ -92,7 +81,7 @@ async function checkAPIConnection() {
     } catch (error) {
         statusElement.classList.remove('connected');
         statusElement.classList.add('error');
-        statusText.textContent = getErrorMessage(error); // Fixed here (removed 'this.')
+        statusText.textContent = getErrorMessage(error);
         console.error('Connection error:', error);
     }
 }
@@ -100,6 +89,29 @@ async function checkAPIConnection() {
 // Check connection on startup and every 5 minutes
 checkAPIConnection();
 setInterval(checkAPIConnection, 300000);
+
+// Configuration for Markdown Syntax
+/**
+ * Configures marked.js options for syntax highlighting
+ * @param {Object} options - Configuration options for marked
+ */
+window.marked = marked.setOptions({
+    highlight: function(code, lang) {
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        return hljs.highlight(code, { language }).value;
+    },
+    langPrefix: 'hljs language-',
+    breaks: true,
+    sanitize: true
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    hljs.configure({
+        cssSelector: 'pre code',
+        ignoreUnescapedHTML: true
+    });
+    hljs.highlightAll();
+});
 
 // Optional: Add click to retry
 document.getElementById('connectionStatus').addEventListener('click', checkAPIConnection);

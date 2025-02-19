@@ -215,7 +215,7 @@ async function renderModels() {
         mainContent.innerHTML = `
             <h3>${model.name}</h3>
             ${!model.available ? '<div class="unavailable-badge">Not Installed</div>' : ''}
-            <p>${model.description || 'No description provided'}</p>
+            <p>${model.description || ' '}</p>
             <p>${model.size}</p>
             <div class="model-features">
                 <div class="feature-item">
