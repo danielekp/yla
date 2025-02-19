@@ -130,6 +130,7 @@ const config = {
     }
 };
 ```
+![yla](src/media/model-selection-screen.png "YLA Model Selection")
 
 ## Model Management
 - **Validation**: App checks installed models on launch
