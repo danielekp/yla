@@ -82,6 +82,7 @@ function sendMessage() {
     const top_k = selectedModelSettings.top_k;
     const top_p = selectedModelSettings.top_p;
     const input = document.getElementById('messageInput');
+    input.style.height = `50px`;
     const message = input.value.trim();
     input.value = '';
     callAPI(message, temperature, top_k, top_p, true);
@@ -98,6 +99,10 @@ function sendMessage() {
  * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
 function callAPI(message, temperature, top_k, top_p, add_msg) {
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+    });
     if (!selectedModelSettings){
         console.log("Select a model!")
         return;
@@ -117,10 +122,79 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
             });
         }
         disableUIElements();
-        
         updateConversationList();
         
-        const loadingElement = addLoadingIndicator();
+        let responseDiv;
+        let thinkDiv;
+        let messageContainer;
+        let currentSection = '';
+        let thinkContent = '';
+        let responseContent = '';
+
+        // Create containers immediately
+        messageContainer = document.createElement('div');
+        messageContainer.classList.add('message-container', 'assistant-message');
+
+        // Create think div first
+        thinkDiv = document.createElement('div');
+        thinkDiv.classList.add('message-think');
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.classList.add('think-loading');
+        const iconImg = document.createElement('img');
+        iconImg.src = 'media/assistant.png';
+        iconImg.alt = 'Assistant thinking';
+        iconImg.classList.add('loading-icon');
+        loadingIndicator.appendChild(iconImg);
+        const loadingText = document.createElement('span');
+        loadingText.textContent = 'Thinking...';
+        loadingText.classList.add('loading-text');
+        loadingIndicator.appendChild(loadingText);
+        thinkDiv.appendChild(loadingIndicator);
+        messageContainer.appendChild(thinkDiv);
+
+        // Create response div
+        responseDiv = document.createElement('div');
+        responseDiv.classList.add('message-response');
+        messageContainer.appendChild(responseDiv);
+
+        document.getElementById('chatContainer').appendChild(messageContainer);
+
+        function processStreamChunk(content) {
+            const existingLoader = thinkDiv.querySelector('.think-loading');
+            if (existingLoader) {
+                existingLoader.remove();
+            }
+            // Check for think tags in the accumulated content
+            if (content.includes('<think>')) {
+                currentSection = 'think';
+                // Remove the opening tag
+                const withoutOpenTag = content.replace('<think>', '');
+                thinkContent += withoutOpenTag;
+                thinkDiv.innerHTML = marked.parse(thinkContent);
+            } else if (content.includes('</think>')) {
+                currentSection = 'response';
+                // Remove the closing tag and any think content
+                const withoutCloseTag = content.replace('</think>', '');
+                // Only add the remaining content after </think> to response
+                responseContent = withoutCloseTag;
+                responseDiv.innerHTML = marked.parse(responseContent);
+            } else {
+                // Add content to appropriate section
+                if (currentSection === 'think') {
+                    thinkContent += content;
+                    thinkDiv.innerHTML = marked.parse(thinkContent);
+                } else {
+                    responseContent += content;
+                    responseDiv.innerHTML = marked.parse(responseContent);
+                }
+            }
+            
+            hljs.highlightAll();
+            messageContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'end'
+            });
+        }
 
         const payload = {
             model: model,
@@ -130,9 +204,9 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                 top_k: top_k,
                 top_p: top_p,
             },
-            stream: false
+            stream: true  // Enable streaming
         };
-        
+
         fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -144,32 +218,89 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            return response.json();
+            return response.body.getReader();
         })
-        .then(data => {
-            loadingElement.remove();
-            const assistantContent = data.choices[0].message.content;
+        .then(reader => {
+            const decoder = new TextDecoder();
             
-            const thinkMatch = assistantContent.match(/<think>(.*?)<\/think>/s);
-            const thinkText = thinkMatch ? thinkMatch[1].trim() : null;
-            const responseText = thinkMatch 
-                ? assistantContent.replace(/<think>.*?<\/think>/s, '').trim() 
-                : assistantContent;
-
-            if (thinkMatch) {
-                thinkText ? addEnhancedMessage(thinkText, responseText) : addMessage(responseText, 'assistant');
-            } else {
-                addMessage(assistantContent, 'assistant');
-            }
+            function readChunk() {
+                return reader.read().then(({ done, value }) => {
+                    if (done) {
+                        isLoading = false;
+                        enableUIElements();
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                        let assistantContent = '';
+                        if (thinkContent) {
+                            assistantContent += `<think>${thinkContent}</think>`;
+                        }
+                        assistantContent += responseContent;
+                        
+                        currentConversation.messages.push({
+                            role: 'assistant',
+                            content: assistantContent
+                        });
+                        
+                        updateConversationList();
+                        return;
+                    }
             
-            currentConversation.messages.push({
-                role: 'assistant',
-                content: assistantContent
-            });
+                    // Process chunk
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    lines.forEach(line => {
+                        // Skip empty lines
+                        if (!line || !line.trim()) return;
+                        
+                        const trimmedLine = line.trim();
+                        
+                        // Handle the [DONE] message
+                        if (trimmedLine === 'data: [DONE]') {
+                            return; // Skip processing this line
+                        }
+                        
+                        if (trimmedLine.startsWith('data: ')) {
+                            try {
+                                // Remove 'data: ' prefix and any leading/trailing whitespace
+                                const jsonStr = trimmedLine.slice(6).trim();
+                                
+                                // Skip empty JSON strings
+                                if (!jsonStr) return;
+                                
+                                const data = JSON.parse(jsonStr);
+                                
+                                // Handle Ollama format
+                                if (data.choices && 
+                                    data.choices[0] && 
+                                    data.choices[0].delta && 
+                                    data.choices[0].delta.content !== undefined) {
+                                    
+                                    const content = data.choices[0].delta.content;
+                                    processStreamChunk(content);
+                                }
+                            } catch (e) {
+                                // Only log actual errors, not the [DONE] message
+                                if (jsonStr !== '[DONE]') {
+                                    console.error('Error parsing JSON string:', jsonStr);
+                                    console.error('Error details:', e);
+                                }
+                            }
+                        }
+                    });
+            
+                    return readChunk();
+                });
+            }            
+            
+            return readChunk();
         })
         .catch(error => {
             console.error('Error:', error);
             loadingElement.remove();
+            messageContainer.remove();
             
             const errorMessage = 'Sorry, I encountered an error. Please try again.';
             addMessage(errorMessage, 'assistant');
@@ -178,18 +309,10 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                 role: 'assistant',
                 content: errorMessage
             });
-        }).finally(() => {
+            
             isLoading = false;
             enableUIElements();
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: 'smooth'
         });
-        });
-        window.scrollTo({
-            top: document.body.scrollHeight,
-            behavior: 'smooth'
-    });
     }
 }
 
@@ -251,17 +374,13 @@ function startNewConversation() {
     if (!isLoading) {
         const newConversation = {
             id: Date.now(),
-            messages: [{
-                role: 'assistant',
-                content: config.chat.welcomeMessage
-            }]
+            messages: []
         };
         conversations.unshift(newConversation);
         currentConversationId = newConversation.id;
         
         const container = document.getElementById('chatContainer');
         container.innerHTML = '';
-        addMessage(config.chat.welcomeMessage, 'assistant');
 
         const sidebar = document.getElementById('sidebar');
         if (!sidebar.classList.contains('active')) {
@@ -326,29 +445,6 @@ function updateConversationList() {
         list.appendChild(item);
     });
 }
-
-// UI Helper Functions
-/**
- * Adds a loading indicator while waiting for response
- * @returns {HTMLElement} The loading indicator element
- */
-function addLoadingIndicator() {
-    const container = document.getElementById('chatContainer');
-    const loadingDiv = document.createElement('div');
-    loadingDiv.classList.add('loading-message');
-    
-    const iconImg = document.createElement('img');
-    iconImg.src = 'media/assistant.png';
-    iconImg.alt = 'Assistant loading';
-    iconImg.classList.add('loading-icon');
-    
-    loadingDiv.appendChild(iconImg);
-    container.appendChild(loadingDiv);
-    container.scrollTop = container.scrollHeight;
-    
-    return loadingDiv;
-}
-
 /**
  * Toggles the sidebar visibility
  */
@@ -515,9 +611,7 @@ function addResendControls(messageDiv, messageContent) {
         let currentNode = messageDiv.nextSibling;
         while (currentNode) {
             const nextNode = currentNode.nextSibling;
-            if (!nextNode.hasClass('loadingMessage')) {
-                currentNode.remove();
-            }
+            currentNode.remove();
             currentNode = nextNode;
         }
         

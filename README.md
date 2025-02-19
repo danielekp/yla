@@ -108,11 +108,6 @@ const config = {
             size: "4.1GB"
         }
     ],
-
-    // Chat first message
-    chat: {
-        welcomeMessage: "Hello! How can I help you today?",
-    },
     
     api: {
         endpoint: "http://localhost:11434/v1/chat/completions",

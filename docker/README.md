@@ -11,3 +11,14 @@ To access the application, open a browser and go to [localhost:8000/src/yla.html
 ```bash
 ssh -L 8000:localhost:8000 user@server
 ```
+
+---
+
+To clean things up, run:
+
+```bash
+docker image remove yla-server:latest ollama/ollama:latest && \
+docker volume rm yla_ollama && \
+docker builder prune -f && \
+docker system prune -f
+```
