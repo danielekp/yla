@@ -56,9 +56,6 @@ const config = {
     api: {
         endpoint: "http://localhost:11434/v1/chat/completions",
         available_models: "http://localhost:11434/v1/models",
-        headers: {
-            'Content-Type': 'application/json'
-        }
     }
 };
 

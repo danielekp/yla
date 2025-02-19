@@ -738,7 +738,6 @@ padding-left: 1em;
 }
 
 .model-card.unavailable {
-    opacity: 0.8;
     pointer-events: none;
     position: relative;
 }
@@ -761,8 +760,53 @@ padding-left: 1em;
     left: 0;
     right: 0;
     bottom: 0;
+    opacity: 0.3;
     background: rgba(255,255,255,0.5);
     z-index: 1;
     border: 1px solid var(--border-color);
     border-radius: 8px;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    background-color: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #666;
+    animation: pulse 1.5s infinite;
+}
+
+.status-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(0.95); }
+}
+
+.connection-status.connected .status-dot {
+    background-color: #22c55e;
+    animation: none;
+}
+
+.connection-status.error .status-dot {
+    background-color: #ef4444;
+    animation: none;
+}
+
+.connection-status:hover {
+    cursor: pointer;
+    background-color: var(--border-color);
 }
