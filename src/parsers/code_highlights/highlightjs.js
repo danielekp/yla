@@ -18,15 +18,7 @@
  *   // let highlighted = JSHighlighter.highlight(jsCode);
  */
 
-(function (root, factory) {
-  if (typeof exports === "object" && typeof module === "object") {
-    module.exports = factory();
-  } else if (typeof define === "function" && define.amd) {
-    define([], factory);
-  } else {
-    root.JSHighlighter = factory();
-  }
-})(this, function () {
+const JSHighlighter =( function () {
   "use strict";
 
   // Utility: Escapes HTML special characters.
@@ -100,4 +92,6 @@
   return {
     highlight: highlightJS
   };
-});
+})();
+
+export {JSHighlighter}
