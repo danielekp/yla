@@ -56,19 +56,11 @@ async function handleModelDownload(event, modelName) {
     try {
         const response = await downloadModel(modelName, abortController);
         const reader = response.body.getReader();
-        let totalSize = 0;
-        let completedSize = 0;
-
-        let currentDigest = null;
-        let layerTotal = 0;
-        let layerCompleted = 0;
-        let overallProgress = 0;
 
         let layers = new Map(); // Track each layer's progress
         let totalAllLayers = 0;
         let completedAllLayers = 0;
 
-        // Modify the chunk processing loop
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -126,7 +118,7 @@ async function handleModelDownload(event, modelName) {
                     }
                 } catch (e) {
                     console.error('Error processing chunk:', e);
-                    statusElement.textContent = `Error: ${e.message}`;
+                    statusElement.textContent = `Error: ${e.message}. This happens, please try again!`;
                     throw e;
                 }
             }
