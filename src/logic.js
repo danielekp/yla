@@ -509,7 +509,8 @@ function truncateConversation(currentConversation, num_ctx) {
         index++;
     }
 
-    return currentConversation.slice(index);
+    // At least one message is always sent
+    return currentConversation.slice(Math.min(index,messagesWithTokens.length-1));
 }
 
 /**

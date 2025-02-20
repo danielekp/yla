@@ -36,7 +36,7 @@ const config = {
     },
     {
 	    name: "deepseek-r1:7b",
-        num_ctx: 65536, // Context Size
+        num_ctx: 2048, // Context Size
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
@@ -44,7 +44,7 @@ const config = {
     },
     {
 	    name: "llama3.2:1b",
-        num_ctx: 65536, // Context Size
+        num_ctx: 2048, // Context Size
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
