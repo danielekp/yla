@@ -27,6 +27,14 @@ const config = {
         systemMessage: "You are Yla, a coding assistant specializing in modern, efficient code. Prioritize best practices, clarity, and performance. Offer concise troubleshooting, adapt explanations to the user’s expertise, and emphasize practical solutions.",
     },
     {
+	    name: "deepseek-r1:1.5b",
+        num_ctx: 65536, // Context Size
+        temperature: 0.7,
+        top_k: 40,
+        top_p: 0.9,
+        size: "1.1 GB",
+    },
+    {
 	    name: "deepseek-r1:7b",
         num_ctx: 2048, // Context Size
         temperature: 0.7,

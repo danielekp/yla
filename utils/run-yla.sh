@@ -26,4 +26,3 @@ kill $OLLAMA_PID
 kill $PYTHON_SERVER_PID
 
 echo "Ollama server and Python server stopped."
-
