@@ -1,5 +1,6 @@
 import config from './config.js';
 import { selectedModelSettings } from './modelSelector.js';
+import { MarkdownParser } from './parsers/markdown_parser.js';
 
 // Data Structure
 /**
@@ -84,10 +85,6 @@ function sendMessage() {
  * @param {boolean} add_msg - Whether to add the message (false in case of resending)
  */
 function callAPI(message, temperature, top_k, top_p, add_msg) {
-    window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-    });
     if (!selectedModelSettings){
         console.log("Select a model!")
         return;
@@ -98,6 +95,10 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
     
     if (message && !isLoading) {
         isLoading = true;
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
         const currentConversation = conversations.find(c => c.id === currentConversationId);
         if (add_msg) {
             addMessage(message, 'user');
@@ -162,7 +163,7 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                 const withoutCloseTag = content.replace('</think>', '');
                 // Only add the remaining content after </think> to response
                 responseContent = withoutCloseTag;
-                responseDiv.innerHTML = marked.parse(responseContent);
+                responseDiv.innerHTML = MarkdownParser.parse(responseContent);
             } else {
                 // Add content to appropriate section
                 if (currentSection === 'think') {
@@ -170,11 +171,9 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                     thinkDiv.innerHTML = thinkContent;
                 } else {
                     responseContent += content;
-                    responseDiv.innerHTML = marked.parse(responseContent);
+                    responseDiv.innerHTML = MarkdownParser.parse(responseContent);
                 }
             }
-            
-            hljs.highlightAll();
             messageContainer.scrollIntoView({
                 behavior: 'smooth',
                 block: 'end'
@@ -248,9 +247,8 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
                         }
                         
                         if (trimmedLine.startsWith('data: ')) {
+                            let jsonStr = trimmedLine.slice(6).trim();
                             try {
-                                // Remove 'data: ' prefix and any leading/trailing whitespace
-                                const jsonStr = trimmedLine.slice(6).trim();
                                 
                                 // Skip empty JSON strings
                                 if (!jsonStr) return;
@@ -308,14 +306,13 @@ function callAPI(message, temperature, top_k, top_p, add_msg) {
 function addMessage(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
-    messageDiv.innerHTML = marked.parse(text, { sanitize: true });
+    messageDiv.innerHTML = MarkdownParser.parse(text, { sanitize: true });
     
     if (sender === 'user') {
         addResendControls(messageDiv, text);
     }
     
     document.getElementById('chatContainer').appendChild(messageDiv);
-    hljs.highlightAll();
 }
 
 /**
@@ -331,18 +328,17 @@ function addEnhancedMessage(thinkText, responseText) {
     if (thinkText) {
         const thinkDiv = document.createElement('div');
         thinkDiv.classList.add('message-think');
-        thinkDiv.innerHTML = marked.parse(thinkText);
+        thinkDiv.innerHTML = MarkdownParser.parse(thinkText);
         messageContainer.appendChild(thinkDiv);
     }
 
     const responseDiv = document.createElement('div');
     responseDiv.classList.add('message-response');
-    responseDiv.innerHTML = marked.parse(responseText);
+    responseDiv.innerHTML = MarkdownParser.parse(responseText);
 
     messageContainer.appendChild(responseDiv);
     container.appendChild(messageContainer);
     container.scrollTop = container.scrollHeight;
-    hljs.highlightAll();
 }
 
 // Conversation Management Functions

@@ -90,29 +90,6 @@ async function checkAPIConnection() {
 checkAPIConnection();
 setInterval(checkAPIConnection, 300000);
 
-// Configuration for Markdown Syntax
-/**
- * Configures marked.js options for syntax highlighting
- * @param {Object} options - Configuration options for marked
- */
-window.marked = marked.setOptions({
-    highlight: function(code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        return hljs.highlight(code, { language }).value;
-    },
-    langPrefix: 'hljs language-',
-    breaks: true,
-    sanitize: true
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    hljs.configure({
-        cssSelector: 'pre code',
-        ignoreUnescapedHTML: true
-    });
-    hljs.highlightAll();
-});
-
 // Optional: Add click to retry
 document.getElementById('connectionStatus').addEventListener('click', checkAPIConnection);
 

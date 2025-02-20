@@ -1,0 +1,44 @@
+/* style.css for JSHighlighter */
+
+/* Basic Code Formatting */
+pre, code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1em;
+    line-height: 1.4;
+  }
+  
+  /* Container for highlighted code */
+  pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+  
+  /* JavaScript Keywords */
+  .hl-keyword {
+    color: #0074D9; /* Blue */
+    font-weight: bold;
+  }
+  
+  /* Numbers */
+  .hl-number {
+    color: #2ECC40; /* Green */
+  }
+  
+  /* Operators */
+  .hl-operator {
+    color: #FF4136; /* Red */
+  }
+  
+  /* Comments */
+  .hl-comment {
+    color: #999; /* Gray */
+    font-style: italic;
+  }
+  
+  /* Strings */
+  .hl-string {
+    color: #B10DC9; /* Purple */
+  }
