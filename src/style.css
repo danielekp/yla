@@ -467,6 +467,7 @@ padding-left: 1em;
 .parameter-panel {
     position: absolute;
     top: calc(100% - 3px);
+    bottom: auto;
     right: 0;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -475,6 +476,11 @@ padding-left: 1em;
     width: 280px;
     display: none;
     box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.parameter-panel.above {
+    top: auto;
+    bottom: calc(100% - 3px);
 }
 
 .resend-controls:hover .parameter-panel {
@@ -809,4 +815,10 @@ padding-left: 1em;
 .connection-status:hover {
     cursor: pointer;
     background-color: var(--border-color);
+}
+
+pre, code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1em;
+    line-height: 1.4;
 }

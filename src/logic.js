@@ -606,6 +606,20 @@ function addResendControls(messageDiv, messageContent) {
         callAPI(messageContent, temp, topK, topP, false);
     };
 
+    const parameterPanel = controls.querySelector('.parameter-panel');
+    messageDiv.addEventListener('mouseenter', () => {
+        const rect = messageDiv.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        
+        // Switch to above position if less than 300px space below
+        if (spaceBelow < 400) {
+            parameterPanel.classList.add('above');
+        } else {
+            parameterPanel.classList.remove('above');
+        }
+    });
+
     messageDiv.appendChild(controls);
 }
 

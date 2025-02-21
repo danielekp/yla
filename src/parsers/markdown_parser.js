@@ -79,7 +79,7 @@ const MarkdownParser = (function() {
     // Updated styling to prevent unnecessary scrollbars
     return {
       html: `<div class="code-block-container" style="margin: 1em 0;">
-              <pre style="background-color: #f5f5f5; padding: 1em; border-radius: 4px; margin: 0; white-space: pre-wrap; word-break: break-word;"><code style="word-break: break-word;">${escapeHtml(code.trim())}</code></pre>
+              <pre style="color:black; background-color: #f5f5f5; padding: 1em; border-radius: 4px; margin: 0; white-space: pre-wrap; word-break: break-word;"><code style="word-break: break-word;">${escapeHtml(code.trim())}</code></pre>
             </div>\n`,
       newIndex: i + 1
     };

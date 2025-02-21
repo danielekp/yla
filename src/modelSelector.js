@@ -21,7 +21,8 @@ async function downloadModel(modelName, abortController) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to start model download');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to start model download');
         }
 
         return response;
@@ -124,7 +125,12 @@ async function handleModelDownload(event, modelName) {
             }
         }
     } catch (error) {
-        statusElement.textContent = `Error: ${error.message}`;
+        let content = error.message;
+        if (content.includes("not exist")) {
+            content = "This model does not exist on Ollama library. Create your custom model"
+        }
+        statusElement.textContent = `Error: ${content}`;
+         
         progressBar.style.width = '0%';
     } finally {
         // Cleanup
@@ -140,6 +146,12 @@ function handleDownloadCancel(modelName) {
     const abortController = activeDownloads.get(modelName);
     if (abortController) {
         abortController.abort();
+        // Reset UI for the specific model card
+        const card = document.querySelector(`[data-model-name="${modelName}"]`);
+        if (card) {
+            card.querySelector('.progress-bar').style.width = '0%';
+            card.querySelector('.download-status').textContent = 'Download cancelled';
+        }
         activeDownloads.delete(modelName);
     }
 }
