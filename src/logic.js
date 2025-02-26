@@ -84,7 +84,7 @@ const ChatApp = (function () {
     function createConversation() {
       const newConversation = {
         id: Date.now(),
-        title: `New Chat ${conversations.length + 1}`,
+        title: `Chat ${conversations.length + 1}`,
         messages: [],
         createdAt: new Date().toISOString(),
       };
@@ -102,48 +102,438 @@ const ChatApp = (function () {
     }
 
     function addMessageToCurrentConversation(message) {
-      const conversation = getCurrentConversation();
-      if (conversation) {
-        conversation.messages.push(message);
-
-        // Update title with first user message if this is the first message
-        if (
-          message.role === 'user' &&
-          conversation.messages.filter((m) => m.role === 'user').length === 1
-        ) {
-          conversation.title =
-            message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
+        const conversation = getCurrentConversation();
+        
+        if (!conversation) {
+          console.error('No active conversation to add message to - creating new conversation');
+          const newConversation = createConversation();
+          newConversation.messages.push(message);
+          
+          // Update title with first user message if this is the first message
+          if (message.role === 'user') {
+            newConversation.title =
+              message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
+          }
+        } else {
+          // Validate message object
+          if (!message || !message.role || message.content === undefined) {
+            console.error('Invalid message object:', message);
+            return;
+          }
+          
+          // Add message to existing conversation
+          conversation.messages.push(message);
+    
+          // Update title with first user message if this is the first message
+          if (
+            message.role === 'user' &&
+            conversation.messages.filter((m) => m.role === 'user').length === 1
+          ) {
+            conversation.title =
+              message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
+          }
         }
-
+    
+        // Make sure to persist state after adding the message
         persistState();
-      } else {
-        console.error('No active conversation to add message to');
+        
+        // Add debug logging
+        console.log(`Added ${message.role} message to conversation ${currentConversationId}`);
       }
+
+    /**
+    * Estimates the number of tokens in text with high accuracy
+    * @param {string} text - The text to estimate tokens for
+    * @returns {number} - Estimated token count
+    */
+    function estimateTokens(text) {
+    if (!text) return 0;
+    
+    // Replace code blocks with placeholders for more accurate estimation
+    const codeBlockRegex = /```[\s\S]*?```/g;
+    const codeBlocks = text.match(codeBlockRegex) || [];
+    
+    // Handle code blocks separately (they tokenize differently)
+    let codeBlockTokens = 0;
+    codeBlocks.forEach(block => {
+        // Code typically has higher token-to-character ratio due to tokenization of symbols
+        const lines = block.split('\n').length;
+        const chars = block.length;
+        // Base token count plus overhead for each line and special chars
+        codeBlockTokens += Math.ceil(chars / 3) + (lines * 0.5);
+    });
+    
+    // Remove code blocks from text for separate processing
+    let processedText = text.replace(codeBlockRegex, '');
+    
+    // Special token handling for markdown formatting
+    const markdownTokens = (processedText.match(/[*_`#>-]|<\/?[a-z]+>/g) || []).length;
+    
+    // Accurate token estimation for normal text
+    // Split by whitespace for words, but also count punctuation
+    const words = processedText.split(/\s+/).filter(Boolean).length;
+    const punctuation = (processedText.match(/[.,;:!?()[\]{}'"]/g) || []).length;
+    
+    // URLs and technical terms tend to tokenize into more tokens than regular words
+    const urlsAndTechnical = (processedText.match(/https?:\/\/\S+|\b[A-Z][a-z]+[A-Z]\w+\b|\b[A-Z]{2,}\b/g) || []).length;
+    
+    // Calculate base token count (cl100k tokenizer averages ~1.3 tokens per word for English)
+    const baseTokens = Math.ceil(words * 1.3);
+    
+    // Add tokens for punctuation (each typically counts as one token)
+    const punctuationTokens = punctuation;
+    
+    // Add extra tokens for URLs and technical terms (they tokenize into more tokens)
+    const technicalTokens = urlsAndTechnical * 2;
+    
+    // Add tokens for markdown formatting
+    const formattingTokens = markdownTokens;
+    
+    // Return the total estimated token count
+    return baseTokens + punctuationTokens + technicalTokens + formattingTokens + codeBlockTokens;
     }
 
+    /**
+     * Estimates token count for a message object
+     * @param {Object} message - Message object with role and content
+     * @returns {number} - Estimated token count
+     */
+    function estimateMessageTokens(message) {
+    if (!message || !message.content) return 0;
+    
+    // Base token overhead for each message (role encoding, formatting)
+    const roleOverhead = 4; // ~4 tokens for role encoding
+    
+    // Calculate content tokens
+    const contentTokens = estimateTokens(message.content);
+    
+    // Thinking sections in assistant messages have additional tokens
+    let thinkingTokens = 0;
+    if (message.role === 'assistant') {
+        const thinkMatch = message.content.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+        // The <think> tags themselves add tokens
+        thinkingTokens = 4; // ~2 tokens for each tag
+        
+        // Estimate tokens in the thinking content
+        const thinkContent = thinkMatch[1];
+        thinkingTokens += estimateTokens(thinkContent);
+        }
+    }
+    
+    return roleOverhead + contentTokens + thinkingTokens;
+    }
+
+    /**
+     * Estimates token count for an array of messages
+     * @param {Array} messages - Array of message objects
+     * @returns {number} - Total estimated token count
+     */
+    function estimateMessagesTokens(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return 0;
+    
+    // For message arrays, there's a small metadata overhead
+    const metadataOverhead = 2;
+    
+    // Sum up tokens for all messages
+    const messageTokens = messages.reduce((sum, message) => 
+        sum + estimateMessageTokens(message), 0);
+    
+    return metadataOverhead + messageTokens;
+    }
+
+    /**
+     * Analyzes message importance based on multiple factors
+     * @param {Object} message - Message object
+     * @param {Array} allMessages - All messages in conversation
+     * @param {number} messageIndex - Index of the message in the conversation
+     * @returns {number} - Importance score (higher = more important)
+     */
+    function calculateMessageImportance(message, allMessages, messageIndex) {
+    if (!message || !message.content) return 0;
+    
+    let importance = 0;
+    
+    // System messages are highest priority
+    if (message.role === 'system') {
+        importance += 100;
+    }
+    
+    // Recency is important (more recent = more relevant to current context)
+    // Scale from 0-20 based on position
+    const recencyScore = 20 * (messageIndex / Math.max(1, allMessages.length - 1));
+    importance += recencyScore;
+    
+    // Content length can indicate information density
+    // But we want to normalize this to avoid biasing too much toward verbose messages
+    const contentLength = message.content.length;
+    const lengthScore = Math.min(10, contentLength / 100); // Cap at 10 points
+    importance += lengthScore;
+    
+    // Check for likely important content indicators
+    const content = message.content.toLowerCase();
+    
+    // Questions tend to be important context
+    if (content.includes('?')) {
+        importance += 5;
+    }
+    
+    // Code blocks often contain important information
+    if (content.includes('```')) {
+        importance += 8;
+    }
+    
+    // Lists often contain structured, important information
+    if (content.match(/(\n[*-]|\n\d+\.)/)) {
+        importance += 5;
+    }
+    
+    // Specific request indicators
+    if (content.match(/\bplease\b|\bcan you\b|\bcould you\b/)) {
+        importance += 3;
+    }
+    
+    // Messages containing key information terms
+    if (content.match(/\bimportant\b|\bnote\b|\bremember\b|\bkey\b|\bessential\b/)) {
+        importance += 7;
+    }
+    
+    // References to specific entities (might be important for context)
+    const namedEntityCount = (content.match(/\b[A-Z][a-z]+\b/g) || []).length;
+    importance += Math.min(5, namedEntityCount);
+    
+    return importance;
+    }
+
+    /**
+     * Finds pairs of messages that should be kept together
+     * @param {Array} messages - All messages in conversation
+     * @returns {Object} - Map of message indices to their paired indices
+     */
+    function identifyMessagePairs(messages) {
+    const pairs = {};
+    
+    for (let i = 0; i < messages.length - 1; i++) {
+        // Identify user-assistant pairs (Q&A pairs)
+        if (messages[i].role === 'user' && messages[i+1].role === 'assistant') {
+        pairs[i] = i+1;
+        pairs[i+1] = i;
+        }
+        
+        // Identify followup clarifications
+        if (i < messages.length - 2 && 
+            messages[i].role === 'assistant' && 
+            messages[i+1].role === 'user' && 
+            messages[i+2].role === 'assistant' &&
+            messages[i+1].content.length < 100) { // Short user message might be a clarification
+        pairs[i+1] = i+2;
+        pairs[i+2] = i+1;
+        }
+    }
+    
+    return pairs;
+    }
+
+    /**
+     * Super smart function to truncate conversation history while maintaining context quality
+     * @param {Array} messages - Array of message objects to truncate
+     * @param {number} maxTokens - Maximum number of tokens to keep
+     * @returns {Array} - Truncated array of messages
+     */
+    function smartTruncateConversationHistory(messages, maxTokens) {
+    if (!Array.isArray(messages) || messages.length === 0) return [];
+    if (!maxTokens || maxTokens <= 0) return [];
+    
+    // If we're already under the token limit, return all messages
+    const totalTokens = estimateMessagesTokens(messages);
+    if (totalTokens <= maxTokens) return [...messages];
+    
+    // Always extract and keep system messages
+    const systemMessages = messages.filter(m => m.role === 'system');
+    const systemTokens = estimateMessagesTokens(systemMessages);
+    
+    // Reserve tokens for system messages
+    const remainingTokens = maxTokens - systemTokens;
+    if (remainingTokens <= 0) {
+        // If system messages alone exceed token limit, we need to truncate them
+        // (rare case, but we should handle it)
+        return smartTruncateMessages(systemMessages, maxTokens);
+    }
+    
+    // Non-system messages for processing
+    const nonSystemMessages = messages.filter(m => m.role !== 'system');
+    
+    // Always keep the most recent exchange (last user message and response if available)
+    let recentMessages = [];
+    const lastUserIndex = findLastIndex(nonSystemMessages, m => m.role === 'user');
+    
+    if (lastUserIndex !== -1) {
+        recentMessages.push(nonSystemMessages[lastUserIndex]);
+        // Include the assistant's response if it exists
+        if (lastUserIndex < nonSystemMessages.length - 1 && 
+            nonSystemMessages[lastUserIndex + 1].role === 'assistant') {
+        recentMessages.push(nonSystemMessages[lastUserIndex + 1]);
+        }
+    }
+    
+    const recentTokens = estimateMessagesTokens(recentMessages);
+    
+    // Update remaining tokens after reserving for recent messages
+    const remainingAfterRecent = remainingTokens - recentTokens;
+    if (remainingAfterRecent <= 0) {
+        // If recent messages exceed remaining tokens, we must sacrifice some content
+        return [...systemMessages, ...smartTruncateMessages(recentMessages, remainingTokens)];
+    }
+    
+    // Calculate importance scores for remaining messages
+    const candidateMessages = nonSystemMessages.filter(
+        (_, index) => !recentMessages.includes(nonSystemMessages[index])
+    );
+    
+    const scoredMessages = candidateMessages.map((message, index) => ({
+        message,
+        originalIndex: nonSystemMessages.indexOf(message),
+        importance: calculateMessageImportance(
+        message, 
+        nonSystemMessages, 
+        nonSystemMessages.indexOf(message)
+        ),
+        tokens: estimateMessageTokens(message)
+    }));
+    
+    // Identify messages that should be kept together
+    const messagePairs = identifyMessagePairs(nonSystemMessages);
+    
+    // Sort by importance (descending)
+    scoredMessages.sort((a, b) => b.importance - a.importance);
+    
+    // Select messages until we reach the token limit
+    const selectedMessages = [];
+    let usedTokens = 0;
+    
+    for (const scored of scoredMessages) {
+        // Check if this message would exceed our remaining token budget
+        if (usedTokens + scored.tokens > remainingAfterRecent) {
+        continue;
+        }
+        
+        // Add the message
+        selectedMessages.push({
+        message: scored.message,
+        originalIndex: scored.originalIndex
+        });
+        usedTokens += scored.tokens;
+        
+        // Check if this message has a paired message we should also include
+        const pairedIndex = messagePairs[scored.originalIndex];
+        if (pairedIndex !== undefined && !selectedMessages.some(m => m.originalIndex === pairedIndex)) {
+        const pairedMessage = nonSystemMessages[pairedIndex];
+        const pairedTokens = estimateMessageTokens(pairedMessage);
+        
+        // Only add the paired message if we have enough tokens
+        if (usedTokens + pairedTokens <= remainingAfterRecent) {
+            selectedMessages.push({
+            message: pairedMessage,
+            originalIndex: pairedIndex
+            });
+            usedTokens += pairedTokens;
+        }
+        }
+    }
+    
+    // Sort selected messages by their original order
+    selectedMessages.sort((a, b) => a.originalIndex - b.originalIndex);
+    
+    // Combine system, selected, and recent messages in the proper order
+    const result = [
+        ...systemMessages,
+        ...selectedMessages.map(m => m.message),
+        ...recentMessages
+    ];
+    
+    return result;
+    }
+
+    /**
+     * Helper function to truncate a specific set of messages to a token limit
+     * @param {Array} messages - Messages to truncate
+     * @param {number} maxTokens - Maximum tokens to use
+     * @returns {Array} - Truncated messages
+     */
+    function smartTruncateMessages(messages, maxTokens) {
+    if (messages.length <= 1) return messages;
+    
+    // If we have multiple messages, try to truncate content rather than removing messages
+    const result = [...messages];
+    let totalTokens = estimateMessagesTokens(result);
+    
+    // If we need to truncate, start with reducing content length
+    if (totalTokens > maxTokens) {
+        // Sort by length (descending) so we truncate the longest messages first
+        const messagesByLength = [...result].sort(
+        (a, b) => b.content.length - a.content.length
+        );
+        
+        for (const message of messagesByLength) {
+        if (totalTokens <= maxTokens) break;
+        
+        const originalMessage = result.find(m => m === message);
+        if (!originalMessage) continue;
+        
+        const originalTokens = estimateMessageTokens(originalMessage);
+        
+        // Calculate how many tokens we need to save
+        const tokensToSave = Math.min(
+            originalTokens - 20, // Keep at least some minimal content
+            totalTokens - maxTokens + 10 // +10 for safety margin
+        );
+        
+        if (tokensToSave <= 0) continue;
+        
+        // Estimate characters to remove (rough approximation)
+        const charsToRemove = Math.ceil(tokensToSave * 3);
+        
+        // Truncate the message with an indicator
+        const newContent = originalMessage.content.substring(
+            0, 
+            originalMessage.content.length - charsToRemove
+        ) + "... [truncated]";
+        
+        originalMessage.content = newContent;
+        
+        // Recalculate total tokens
+        totalTokens = estimateMessagesTokens(result);
+        }
+    }
+    
+    return result;
+    }
+
+    /**
+     * Helper function to find the last index of an element satisfying a predicate
+     * @param {Array} array - The array to search
+     * @param {Function} predicate - Function that returns true for the element to find
+     * @returns {number} - The last index or -1 if not found
+     */
+    function findLastIndex(array, predicate) {
+    for (let i = array.length - 1; i >= 0; i--) {
+        if (predicate(array[i], i, array)) {
+        return i;
+        }
+    }
+    return -1;
+    }
+
+    /**
+     * Truncates conversation history with consideration for conversation flow
+     * @param {number} maxTokens - Maximum number of tokens to keep
+     * @returns {Array} Truncated conversation history
+     */
     function truncateConversationHistory(maxTokens) {
-      const conversation = getCurrentConversation();
-      if (!conversation) return [];
-
-      const messagesWithTokens = conversation.messages.map((msg) => {
-        // Estimate token count based on words (rough approximation)
-        const wordCount = msg.content.split(/\s+/).length;
-        const tokens = Math.ceil(wordCount * 3);
-        return { ...msg, tokens };
-      });
-
-      let totalTokens = messagesWithTokens.reduce((sum, msg) => sum + msg.tokens, 0);
-
-      if (totalTokens <= maxTokens) return conversation.messages;
-
-      let index = 0;
-      while (totalTokens > maxTokens && index < messagesWithTokens.length) {
-        totalTokens -= messagesWithTokens[index].tokens;
-        index++;
-      }
-
-      // Always keep at least one message
-      return conversation.messages.slice(Math.min(index, messagesWithTokens.length - 1));
+    const conversation = getCurrentConversation();
+    if (!conversation) return [];
+    
+    return smartTruncateConversationHistory(conversation.messages, maxTokens);
     }
 
     function updateConversationAfterResend(messageContent) {
@@ -233,25 +623,29 @@ const ChatApp = (function () {
         onComplete,
         onError,
       } = options;
-
+  
       // Get the current model settings from the updated interface
       const currentModel = selectedModelSettings.get();
-
+  
       if (!currentModel) {
         onError(new Error('No model selected'));
         return;
       }
-
+  
       const endpoint = config.api.endpoint;
       const model = currentModel.name;
       const num_ctx = currentModel.num_ctx;
-
-      // Prepare conversation history
+  
+      // Prepare conversation history - DEBUG FORMAT TO VERIFY STRUCTURE
       const messages = StateManager.truncateConversationHistory(num_ctx);
-
+      console.log("Sending messages to API:", JSON.stringify(messages, null, 2));
+  
+      // Format messages properly for the API
+      const formattedMessages = formatMessagesForAPI(messages);
+  
       const payload = {
         model: model,
-        messages: messages,
+        messages: formattedMessages,
         options: {
           temperature: temperature,
           top_k: top_k,
@@ -259,12 +653,12 @@ const ChatApp = (function () {
         },
         stream: true,
       };
-
+  
       // Variables to accumulate content
       let currentSection = '';
       let thinkContent = '';
       let responseContent = '';
-
+  
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -273,38 +667,38 @@ const ChatApp = (function () {
           },
           body: JSON.stringify(payload),
         });
-
+  
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-
+  
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-
+  
         let done = false;
         while (!done) {
           const { value, done: readerDone } = await reader.read();
           done = readerDone;
-
+  
           if (done) break;
-
+  
           const chunk = decoder.decode(value);
           const lines = chunk.split('\n');
-
+  
           for (const line of lines) {
             if (!line || !line.trim()) continue;
-
+  
             const trimmedLine = line.trim();
-
+  
             if (trimmedLine === 'data: [DONE]') continue;
-
+  
             if (trimmedLine.startsWith('data: ')) {
               let jsonStr = trimmedLine.slice(6).trim();
               try {
                 if (!jsonStr) continue;
-
+  
                 const data = JSON.parse(jsonStr);
-
+  
                 if (
                   data.choices &&
                   data.choices[0] &&
@@ -312,7 +706,7 @@ const ChatApp = (function () {
                   data.choices[0].delta.content !== undefined
                 ) {
                   const content = data.choices[0].delta.content;
-
+  
                   // Process different parts of the response
                   if (content.includes('<think>')) {
                     currentSection = 'think';
@@ -344,21 +738,48 @@ const ChatApp = (function () {
             }
           }
         }
-
+  
         // Compose the complete assistant message
         let assistantContent = '';
         if (thinkContent) {
           assistantContent += `<think>${thinkContent}</think>`;
         }
         assistantContent += responseContent;
-
+  
+        // Verify the assistant content before completing
+        console.log("Assistant response content:", assistantContent);
+  
         onComplete && onComplete(assistantContent);
       } catch (error) {
         console.error('API call error:', error);
         onError && onError(error);
       }
     }
-
+  
+    /**
+     * Formats messages to ensure they're properly structured for the API
+     * @param {Array} messages - Array of message objects
+     * @returns {Array} - Properly formatted messages for the API
+     */
+    function formatMessagesForAPI(messages) {
+      if (!Array.isArray(messages)) return [];
+      
+      return messages.map(message => {
+        // Create a clean message object with just role and content
+        const formattedMessage = {
+          role: message.role,
+          content: message.content
+        };
+        
+        // Handle special case where content might be null or undefined
+        if (!formattedMessage.content) {
+          formattedMessage.content = "";
+        }
+        
+        return formattedMessage;
+      });
+    }
+  
     return {
       callModel,
     };
@@ -958,46 +1379,50 @@ const ChatApp = (function () {
      */
     function sendMessage() {
       const currentModel = selectedModelSettings.get();
-
+  
       if (!currentModel) {
         UIManager.showToast('Please select a model first', 'warning');
         return;
       }
-
+  
       const temperature = currentModel.temperature;
       const top_k = currentModel.top_k;
       const top_p = currentModel.top_p;
-
+  
       const input = document.getElementById('messageInput');
       const message = input.value.trim();
-
+  
       if (!message || StateManager.isAppLoading()) {
         return;
       }
-
+  
       // Reset input
       input.value = '';
       input.style.height = '50px';
-
+  
       // Create conversation if it doesn't exist
       if (!StateManager.getCurrentConversation()) {
         StateManager.createConversation();
         UIManager.clearChatContainer();
       }
-
+  
       // Add message to UI
       UIManager.renderUserMessage(message);
-
-      // Add message to state
+  
+      // Add message to state - IMPORTANT: Do this before API call
       StateManager.addMessageToCurrentConversation({
         role: 'user',
         content: message,
       });
-
+      
+      // Log current conversation state for debugging
+      console.log("Current conversation after adding user message:", 
+                  JSON.stringify(StateManager.getCurrentConversationMessages(), null, 2));
+  
       // Call model
       processModelCall(message, temperature, top_k, top_p);
     }
-
+  
     /**
      * Handles resending a message with different parameters
      * @param {string} message - The message to resend
@@ -1008,7 +1433,7 @@ const ChatApp = (function () {
     function resendMessage(message, temperature, top_k, top_p) {
       processModelCall(message, temperature, top_k, top_p, false);
     }
-
+  
     /**
      * Processes a model call with the given parameters
      * @param {string} message - The message to send
@@ -1020,10 +1445,10 @@ const ChatApp = (function () {
     function processModelCall(message, temperature, top_k, top_p, addToState = true) {
       // Set loading state
       StateManager.setLoading(true);
-
+  
       // Prepare UI for assistant response
       const uiElements = UIManager.prepareAssistantMessageUI();
-
+  
       // Call model
       ApiService.callModel({
         message,
@@ -1037,36 +1462,58 @@ const ChatApp = (function () {
           UIManager.updateResponseContent(uiElements.responseDiv, responseContent);
         },
         onComplete: (completeContent) => {
-          // Add response to state
+          // Verify we have response content
+          if (!completeContent) {
+            console.error("Empty response content received from API");
+            completeContent = "Sorry, I couldn't generate a proper response.";
+          }
+  
           if (addToState) {
+            // Double-check that we have a valid conversation
+            if (!StateManager.getCurrentConversation()) {
+              console.error("No active conversation to add message to");
+              StateManager.createConversation();
+            }
+            
+            // Add the message to the state
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: completeContent,
             });
+            
+            // Ensure state is persisted
+            StateManager.persistState();
+            
+            // Log state after adding response
+            console.log("Current conversation after adding assistant response:", 
+                        JSON.stringify(StateManager.getCurrentConversationMessages(), null, 2));
           }
-
+  
           // Update conversation list to reflect new messages
           updateConversationList();
-
+  
           // Reset loading state
           StateManager.setLoading(false);
         },
         onError: (error) => {
           console.error('Error calling model:', error);
-
+  
           // Remove the message container
           uiElements.container.remove();
-
+  
           // Show error message
           UIManager.renderErrorMessage('Sorry, I encountered an error. Please try again.');
-
+  
           if (addToState) {
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: 'Sorry, I encountered an error. Please try again.',
             });
+            
+            // Ensure state is persisted after error
+            StateManager.persistState();
           }
-
+  
           // Reset loading state
           StateManager.setLoading(false);
         },
@@ -1191,8 +1638,6 @@ const ChatApp = (function () {
       if (selectedModelSettings.get()) {
         startNewConversation();
       } else {
-        // If no model selected yet, set up a listener to create a new chat
-        // once model selection happens
         const checkModelInterval = setInterval(() => {
           if (selectedModelSettings.get()) {
             startNewConversation();
