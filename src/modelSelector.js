@@ -361,6 +361,7 @@ const ModelSelector = (function () {
                         <span class="feature-label">Top P</span>
                         <span class="feature-value">${model.top_p}</span>
                     </div>
+
                 </div>
                 <div class="system-message">
                     <span class="system-label">System Role:</span>

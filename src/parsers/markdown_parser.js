@@ -27,18 +27,18 @@
  * Markdown Parser with Fixed Code Block Styling
  * Prevents unnecessary horizontal scrollbars in code blocks
  */
-const MarkdownParser = (function() {
-  "use strict";
+const MarkdownParser = (function () {
+  'use strict';
 
   function escapeHtml(text) {
     const replacements = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
     };
-    return String(text).replace(/[&<>"']/g, match => replacements[match]);
+    return String(text).replace(/[&<>"']/g, (match) => replacements[match]);
   }
 
   function parseInline(text) {
@@ -47,30 +47,32 @@ const MarkdownParser = (function() {
     const transforms = [
       {
         pattern: /`([^`]+)`/g,
-        replacement: (_, code) => `<code>${code}</code>`
+        replacement: (_, code) => `<code>${code}</code>`,
       },
       {
         pattern: /\*\*(.+?)\*\*|__(.+?)__/g,
-        replacement: (_, m1, m2) => `<strong>${m1 || m2}</strong>`
+        replacement: (_, m1, m2) => `<strong>${m1 || m2}</strong>`,
       },
       {
         pattern: /\*(.+?)\*|_(.+?)_/g,
-        replacement: (_, m1, m2) => `<em>${m1 || m2}</em>`
+        replacement: (_, m1, m2) => `<em>${m1 || m2}</em>`,
       },
       {
         pattern: /\[([^\]]+)\]\(([^)]+)\)/g,
-        replacement: (_, text, url) => `<a href="${escapeHtml(url)}">${text}</a>`
-      }
+        replacement: (_, text, url) => `<a href="${escapeHtml(url)}">${text}</a>`,
+      },
     ];
 
-    return transforms.reduce((text, transform) => 
-      text.replace(transform.pattern, transform.replacement), text);
+    return transforms.reduce(
+      (text, transform) => text.replace(transform.pattern, transform.replacement),
+      text
+    );
   }
 
   function parseCodeBlock(lines, startIndex) {
     let code = '';
     let i = startIndex + 1;
-    
+
     while (i < lines.length && !lines[i].trim().startsWith('```')) {
       code += lines[i] + '\n';
       i++;
@@ -79,9 +81,11 @@ const MarkdownParser = (function() {
     // Updated styling to prevent unnecessary scrollbars
     return {
       html: `<div class="code-block-container" style="margin: 1em 0;">
-              <pre style="color:black; background-color: #f5f5f5; padding: 1em; border-radius: 4px; margin: 0; white-space: pre-wrap; word-break: break-word;"><code style="word-break: break-word;">${escapeHtml(code.trim())}</code></pre>
+              <pre style="color:black; background-color: #f5f5f5; padding: 1em; border-radius: 4px; margin: 0; white-space: pre-wrap; word-break: break-word;"><code style="word-break: break-word;">${escapeHtml(
+                code.trim()
+              )}</code></pre>
             </div>\n`,
-      newIndex: i + 1
+      newIndex: i + 1,
     };
   }
 
@@ -135,11 +139,11 @@ const MarkdownParser = (function() {
         const isOrdered = trimmedLine.match(/^\d+\.\s/);
         const listItems = [];
         const startIndent = line.search(/\S/);
-        
+
         while (i < lines.length) {
           const currentLine = lines[i];
           const currentIndent = currentLine.search(/\S/);
-          const isListItem = isOrdered 
+          const isListItem = isOrdered
             ? currentLine.trim().match(/^\d+\.\s/)
             : currentLine.trim().match(/^[-*+]\s/);
 
@@ -158,9 +162,9 @@ const MarkdownParser = (function() {
 
         const listTag = isOrdered ? 'ol' : 'ul';
         const listContent = listItems
-          .map(item => `<li>${parseInline(item.trim())}</li>`)
+          .map((item) => `<li>${parseInline(item.trim())}</li>`)
           .join('\n');
-        
+
         html += `<${listTag}>\n${listContent}\n</${listTag}>\n`;
         continue;
       }
@@ -183,7 +187,7 @@ const MarkdownParser = (function() {
     }
 
     markdown = markdown.replace(/\r\n|\r/g, '\n');
-    
+
     let html = parseBlocks(markdown);
 
     if (options.sanitize) {
