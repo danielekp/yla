@@ -344,6 +344,21 @@ const AppInitializer = (function () {
     },
   };
 
+  function initializeSidebarToggle() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleButton = document.getElementById('toggleSidebarButton');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (sidebar && toggleButton) {
+      // Set initial state based on sidebar active class
+      toggleButton.classList.toggle('sidebar-closed', !sidebar.classList.contains('active'));
+      
+      if (mainContent) {
+        mainContent.classList.toggle('sidebar-active', sidebar.classList.contains('active'));
+      }
+    }
+  }
+
   // ==============================
   // Application Initializer
   // ==============================
@@ -360,6 +375,8 @@ const AppInitializer = (function () {
 
       // Set up event listeners
       EventManager.initializeEventListeners();
+
+      initializeSidebarToggle();
 
       // Start connection monitoring
       ConnectionManager.startConnectionMonitoring();

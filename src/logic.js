@@ -1128,6 +1128,18 @@ const ChatApp = (function () {
     function toggleSidebar() {
       if (elements.sidebar) {
         elements.sidebar.classList.toggle('active');
+        
+        // Toggle the sidebar-closed class on the toggle button
+        const toggleButton = document.getElementById('toggleSidebarButton');
+        if (toggleButton) {
+          toggleButton.classList.toggle('sidebar-closed', !elements.sidebar.classList.contains('active'));
+        }
+        
+        // Toggle the sidebar-active class on main content for responsive layout
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.classList.toggle('sidebar-active', elements.sidebar.classList.contains('active'));
+        }
       }
     }
 

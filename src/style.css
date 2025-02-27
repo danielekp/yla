@@ -145,6 +145,7 @@ body {
     background-color: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     padding: 1rem;
+    display: none;
     padding-top: 80px;
     overflow-y: auto;
     position: fixed;
@@ -1147,5 +1148,70 @@ pre, code {
         right: 10px;
         width: calc(100% - 20px);
         max-width: 300px;
+    }
+}
+
+/* New sidebar toggle button styles */
+.sidebar-toggle-new {
+    position: fixed;
+    left: 250px; /* Matches sidebar width */
+    top: 80px; /* Positions below the header */
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-left: none; /* Remove left border to blend with sidebar */
+    border-radius: 0 8px 8px 0;
+    width: 32px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 2px 0 5px var(--shadow-color);
+    transition: left 0.3s ease, transform 0.3s ease;
+    color: var(--text-secondary);
+}
+
+.sidebar-toggle-new:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.sidebar-toggle-new .toggle-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+}
+
+/* When sidebar is not active, move the button to the left edge */
+.sidebar-toggle-new.sidebar-closed {
+    left: 0;
+    border-radius: 0 8px 8px 0;
+    border-left: 1px solid var(--border-color);
+}
+
+/* Rotate icon based on sidebar state */
+.sidebar-toggle-new.sidebar-closed .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Adjust main content padding when sidebar is active */
+.main-content.sidebar-active {
+    padding-left: 250px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar-toggle-new {
+        top: 60px;
+    }
+    
+    .main-content.sidebar-active {
+        padding-left: 0;
+    }
+    
+    .sidebar {
+        width: 100%;
+        max-width: 250px;
     }
 }
