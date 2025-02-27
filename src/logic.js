@@ -136,9 +136,6 @@ const ChatApp = (function () {
     
         // Make sure to persist state after adding the message
         persistState();
-        
-        // Add debug logging
-        console.log(`Added ${message.role} message to conversation ${currentConversationId}`);
       }
 
     /**
@@ -745,9 +742,6 @@ const ChatApp = (function () {
           assistantContent += `<think>${thinkContent}</think>`;
         }
         assistantContent += responseContent;
-  
-        // Verify the assistant content before completing
-        console.log("Assistant response content:", assistantContent);
   
         onComplete && onComplete(assistantContent);
       } catch (error) {
@@ -1415,10 +1409,6 @@ const ChatApp = (function () {
         content: message,
       });
       
-      // Log current conversation state for debugging
-      console.log("Current conversation after adding user message:", 
-                  JSON.stringify(StateManager.getCurrentConversationMessages(), null, 2));
-  
       // Call model
       processModelCall(message, temperature, top_k, top_p);
     }
@@ -1483,11 +1473,7 @@ const ChatApp = (function () {
             
             // Ensure state is persisted
             StateManager.persistState();
-            
-            // Log state after adding response
-            console.log("Current conversation after adding assistant response:", 
-                        JSON.stringify(StateManager.getCurrentConversationMessages(), null, 2));
-          }
+            }
   
           // Update conversation list to reflect new messages
           updateConversationList();

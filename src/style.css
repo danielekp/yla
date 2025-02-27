@@ -147,7 +147,6 @@ body {
     padding: 1rem;
     padding-top: 80px;
     overflow-y: auto;
-    display: none;
     position: fixed;
     top: 50px;
     left: 0;
@@ -998,3 +997,155 @@ pre, code {
     visibility: hidden;
   }
   
+  /* Model indicator in header */
+.model-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.model-indicator:hover {
+    background-color: var(--border-color);
+}
+
+.model-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.model-icon-img {
+    width: 24px;
+    height: 24px;
+}
+
+.model-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.model-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.model-size {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Model switcher panel */
+.model-switcher-panel {
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    width: 300px;
+    max-height: 60vh;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px var(--shadow-color);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slide-in 0.2s ease-out;
+}
+
+.model-switcher-panel.active {
+    display: flex;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.close-panel-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.close-panel-button:hover {
+    background-color: var(--border-color);
+}
+
+.model-list {
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(60vh - 60px);
+}
+
+.model-item {
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.model-item:hover {
+    background-color: var(--border-color);
+}
+
+.model-item.active {
+    background-color: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+}
+
+.model-item-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.model-item-size {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .model-switcher-panel {
+        right: 10px;
+        width: calc(100% - 20px);
+        max-width: 300px;
+    }
+}
