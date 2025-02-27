@@ -344,20 +344,32 @@ const AppInitializer = (function () {
     },
   };
 
-  function initializeSidebarToggle() {
-    const sidebar = document.getElementById('sidebar');
-    const toggleButton = document.getElementById('toggleSidebarButton');
-    const mainContent = document.querySelector('.main-content');
+  /**
+ * Initialize the sidebar toggle button state
+ */
+function initializeSidebarToggle() {
+  const sidebar = document.getElementById('sidebar');
+  const toggleButton = document.getElementById('toggleSidebarButton');
+  const mainContent = document.querySelector('.main-content');
+  
+  if (sidebar && toggleButton) {
+    // Check if sidebar has 'active' class (it shouldn't by default)
+    const isSidebarActive = sidebar.classList.contains('active');
     
-    if (sidebar && toggleButton) {
-      // Set initial state based on sidebar active class
-      toggleButton.classList.toggle('sidebar-closed', !sidebar.classList.contains('active'));
-      
-      if (mainContent) {
-        mainContent.classList.toggle('sidebar-active', sidebar.classList.contains('active'));
-      }
+    // Set correct initial classes
+    toggleButton.classList.toggle('sidebar-closed', !isSidebarActive);
+    
+    if (mainContent) {
+      mainContent.classList.toggle('sidebar-active', isSidebarActive);
+    }
+    
+    // Force correct initial position if sidebar is closed by default
+    if (!isSidebarActive && toggleButton.classList.contains('sidebar-closed')) {
+      // This ensures the button is positioned at the left edge
+      toggleButton.style.left = '0';
     }
   }
+}
 
   // ==============================
   // Application Initializer

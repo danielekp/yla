@@ -1605,12 +1605,8 @@ const ChatApp = (function () {
      */
     function deleteConversation(conversationId) {
       const success = StateManager.deleteConversation(conversationId);
-
       if (success) {
-        UIManager.showToast('Conversation deleted', 'success');
         updateConversationList();
-      } else {
-        UIManager.showToast('Could not delete conversation', 'error');
       }
     }
 
