@@ -105,7 +105,7 @@ body {
 }
 
 /* Button styles */
-.new-chat-button, .toggle-sidebar-button, .download-button {
+.new-chat-button, .download-button {
     color: white;
     padding-left: 1rem;
     padding-right: 1rem;
@@ -121,14 +121,6 @@ body {
 
 .new-chat-button:hover {
     background-color: #16a34a;
-}
-
-.toggle-sidebar-button {
-    background-color: #6366f1;
-}
-
-.toggle-sidebar-button:hover {
-    background-color: #4f46e5;
 }
 
 .download-button {
