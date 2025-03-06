@@ -69,7 +69,6 @@ const AppInitializer = (function () {
       this.registerEvent('newChatButton', 'click', startNewConversation);
       this.registerEvent('toggleSidebarButton', 'click', toggleSidebar);
       this.registerEvent('themeToggleButton', 'click', toggleTheme);
-      this.registerEvent('downloadButton', 'click', downloadConversation);
 
       // Connection status retry on click
       this.registerEvent('connectionStatus', 'click', () =>
@@ -345,31 +344,29 @@ const AppInitializer = (function () {
   };
 
   /**
- * Initialize the sidebar toggle button state
- */
-function initializeSidebarToggle() {
-  const sidebar = document.getElementById('sidebar');
-  const toggleButton = document.getElementById('toggleSidebarButton');
-  const mainContent = document.querySelector('.main-content');
-  
-  if (sidebar && toggleButton) {
-    // Check if sidebar has 'active' class (it shouldn't by default)
-    const isSidebarActive = sidebar.classList.contains('active');
-    
-    // Set correct initial classes
-    toggleButton.classList.toggle('sidebar-closed', !isSidebarActive);
-    
-    if (mainContent) {
-      mainContent.classList.toggle('sidebar-active', isSidebarActive);
-    }
-    
-    // Force correct initial position if sidebar is closed by default
-    if (!isSidebarActive && toggleButton.classList.contains('sidebar-closed')) {
-      // This ensures the button is positioned at the left edge
+   * Initialize the sidebar toggle button state
+   * Ensures sidebar is closed by default and toggle button position is correct
+   */
+  function initializeSidebarToggle() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleButton = document.getElementById('toggleSidebarButton');
+    const mainContent = document.querySelector('.main-content');
+
+    if (sidebar && toggleButton) {
+      // Ensure sidebar starts in closed state (remove 'active' class if present)
+      sidebar.classList.remove('active');
+
+      // Ensure toggle button shows closed state
+      toggleButton.classList.add('sidebar-closed');
+
+      if (mainContent) {
+        mainContent.classList.remove('sidebar-active');
+      }
+
+      // Force correct initial position
       toggleButton.style.left = '0';
     }
   }
-}
 
   // ==============================
   // Application Initializer

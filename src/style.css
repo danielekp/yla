@@ -54,12 +54,37 @@ body {
     100% { transform: scale(0.95); }
 }
 
+@keyframes pulse-error {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 /* Layout components */
 .main-content {
     flex-grow: 1;
     display: flex;
     position: relative;
     padding-top: 80px;
+}
+
+.main-content.sidebar-active {
+    padding-left: 250px;
+}
+
+.hidden {
+    display: none !important;
 }
 
 /* HEADER STYLES */
@@ -145,12 +170,61 @@ body {
     left: 0;
     height: calc(100% - 50px);
     z-index: 4;
+    transition: transform 0.3s ease;
 }
 
 .sidebar.active {
     display: block;
 }
 
+/* Sidebar toggle button */
+.sidebar-toggle-new {
+    position: fixed;
+    left: 0; /* Default position when sidebar is closed */
+    top: 140px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
+    width: 42px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 2px 0 5px var(--shadow-color);
+    transition: left 0.3s ease, transform 0.3s ease, background-color 0.2s;
+    color: var(--text-secondary);
+}
+
+.sidebar-toggle-new:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.sidebar-toggle-new .toggle-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-toggle-new.sidebar-closed {
+    left: 0;
+    border-left: 1px solid var(--border-color);
+}
+
+.sidebar-toggle-new.sidebar-closed .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* When sidebar is active, position the toggle button accordingly */
+.sidebar.active + .sidebar-toggle-new,
+.sidebar-toggle-new:not(.sidebar-closed) {
+    left: 250px;
+    border-left: none;
+}
+
+/* Conversation list */
 .conversation-list {
     display: flex;
     flex-direction: column;
@@ -158,7 +232,11 @@ body {
 }
 
 .conversation-item {
-    padding: 0.75rem;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
     border-radius: 0.5rem;
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -166,6 +244,7 @@ body {
     opacity: 0.8;
     transition: background-color 0.2s;
     z-index: 20;
+    margin-bottom: 5px;
 }
 
 .conversation-item:hover {
@@ -176,6 +255,106 @@ body {
 .conversation-item.active {
     background-color: var(--bg-primary);
     border: 1px solid #60a5fa;
+}
+
+.conversation-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conversation-delete-btn {
+    visibility: hidden;
+    opacity: 0;
+    background: none;
+    border: none;
+    color: #ff5050;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.conversation-item:hover .conversation-delete-btn {
+    visibility: visible;
+    opacity: 1;
+}
+
+.conversation-delete-btn:hover {
+    background-color: rgba(255, 80, 80, 0.1);
+}
+
+.conversation-delete-btn.disabled {
+    color: #888;
+    cursor: not-allowed;
+}
+
+.conversation-delete-btn.disabled:hover {
+    background-color: transparent;
+}
+
+/* Delete confirmation UI */
+.conversation-delete-confirm {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 0 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: slide-in 0.2s ease-out;
+    z-index: 5;
+}
+
+.conversation-delete-confirm span {
+    margin-right: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.confirm-buttons button {
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-yes {
+    background-color: #f44336;
+    color: white;
+}
+
+.confirm-yes:hover {
+    background-color: #d32f2f;
+}
+
+.confirm-no {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.confirm-no:hover {
+    background-color: #bdbdbd;
+}
+
+.conversation-item:has(.conversation-delete-confirm) .conversation-delete-btn {
+    visibility: hidden;
 }
 
 /* Chat section styles */
@@ -224,14 +403,14 @@ body {
     overflow-wrap: break-word;
 }
 
+.user-message:hover .resend-controls {
+    opacity: 1;
+}
+
 .user-message pre,
 .assistant-message pre {
     white-space: pre-wrap;
     word-wrap: break-word;
-}
-
-.user-message:hover .resend-controls {
-    opacity: 1;
 }
 
 .assistant-message {
@@ -239,6 +418,13 @@ body {
     align-self: flex-start;
     color: var(--text-primary);
     box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.message-container {
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 1rem;
 }
 
 .message-think {
@@ -254,132 +440,6 @@ body {
     background-color: var(--assistant-message-bg);
     padding: 1rem;
     color: var(--text-primary);
-}
-
-.message-container {
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    overflow: hidden;
-    margin-bottom: 1rem;
-}
-
-/* Input area styles */
-.input-container {
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    box-shadow: 0 -2px 4px var(--shadow-color);
-}
-
-.input-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    display: flex;
-    gap: 1rem;
-}
-
-.message-input {
-    flex-grow: 1;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    resize: none;
-    min-height: 50px;
-    max-height: 150px;
-    line-height: 1.5;
-    overflow-y: auto;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    transition: height 0.2s ease-out;
-}
-
-.send-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    width: 48px;
-    height: 54px;
-    background-color: #007AFF;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.send-button:hover {
-    background-color: #0056b3;
-}
-
-.send-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.send-icon {
-    width: 70px;
-    height: 70px;
-}
-
-/* Loading styles */
-.think-loading {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem;
-}
-
-.think-loading .loading-icon,
-.loading-icon {
-    width: 24px;
-    height: 24px;
-    animation: rotate 2s linear infinite;
-    margin-right: 0.5rem;
-}
-
-.loading-icon {
-    width: 34px;
-    height: 34px;
-}
-
-.think-loading .loading-text {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    font-style: italic;
-}
-
-.loading-message {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    max-width: 80%;
-    background-color: var(--bg-secondary);
-    color: #333;
-    align-self: flex-start;
-    box-shadow: 0 -2px 4px var(--shadow-color);
-}
-
-/* Theme toggle styles */
-.theme-toggle-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-}
-
-.theme-toggle-icon {
-    width: 44px;
-    height: 44px;
-}
-
-/* Disabled state styles */
-.disabled,
-#newChatButton.disabled,
-.conversation-item.disabled {
-    opacity: 0.5;
-    pointer-events: none;
-    cursor: not-allowed !important;
 }
 
 /* Resend controls */
@@ -500,17 +560,153 @@ body {
     filter: brightness(1.1);
 }
 
-/* Icons */
-.settings-icon {
+/* Input area styles */
+.input-container {
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    box-shadow: 0 -2px 4px var(--shadow-color);
+}
+
+.input-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    gap: 1rem;
+}
+
+.message-input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    resize: none;
+    min-height: 50px;
+    max-height: 150px;
+    line-height: 1.5;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    transition: height 0.2s ease-out;
+}
+
+.send-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    width: 48px;
+    height: 54px;
+    background-color: #007AFF;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.send-button:hover {
+    background-color: #0056b3;
+}
+
+.send-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.send-icon {
+    width: 70px;
+    height: 70px;
+}
+
+/* Loading styles */
+.think-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.think-loading .loading-icon,
+.loading-icon {
+    width: 24px;
+    height: 24px;
+    animation: rotate 2s linear infinite;
+    margin-right: 0.5rem;
+}
+
+.loading-icon {
+    width: 34px;
+    height: 34px;
+}
+
+.think-loading .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.loading-message {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-width: 80%;
+    background-color: var(--bg-secondary);
+    color: #333;
+    align-self: flex-start;
+    box-shadow: 0 -2px 4px var(--shadow-color);
+}
+
+/* Connection status */
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    background-color: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+.connection-status:hover {
+    cursor: pointer;
+    background-color: var(--border-color);
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #666;
+    animation: pulse 1.5s infinite;
+}
+
+.status-text {
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
-.refresh-icon {
-    color: white;
+.connection-status.connected .status-dot {
+    background-color: #22c55e;
+    animation: none;
 }
 
-.hidden {
-    display: none !important;
+.connection-status.error .status-dot {
+    background-color: #ef4444;
+    animation: pulse-error 2s infinite;
+}
+
+/* Theme toggle styles */
+.theme-toggle-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.theme-toggle-icon {
+    width: 44px;
+    height: 44px;
 }
 
 /* Model selector */
@@ -701,296 +897,7 @@ body {
     line-height: 1.4;
 }
 
-/* Connection status */
-.connection-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 2rem;
-    background-color: var(--bg-secondary);
-    transition: all 0.3s ease;
-}
-
-.connection-status:hover {
-    cursor: pointer;
-    background-color: var(--border-color);
-}
-
-.status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #666;
-    animation: pulse 1.5s infinite;
-}
-
-.status-text {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.connection-status.connected .status-dot {
-    background-color: #22c55e;
-    animation: none;
-}
-
-.connection-status.error .status-dot {
-    background-color: #ef4444;
-    animation: none;
-}
-
-/* Code styles */
-pre, code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1em;
-    line-height: 1.4;
-}
-
-/* Responsive styles */
-@media (max-width: 640px) {
-    .message {
-        max-width: 90%;
-    }
-    
-    .sidebar {
-        position: absolute;
-        height: 100%;
-        z-index: 10;
-    }
-}
-
-/* Conversation item with delete button */
-.conversation-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 6px;
-    margin-bottom: 5px;
-    transition: background-color 0.2s;
-  }
-  
-  .conversation-title {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .conversation-delete-btn {
-    visibility: hidden;
-    opacity: 0;
-    background: none;
-    border: none;
-    color: #ff5050;
-    cursor: pointer;
-    padding: 5px;
-    margin-left: 10px;
-    border-radius: 4px;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .conversation-delete-btn:hover {
-    background-color: rgba(255, 80, 80, 0.1);
-  }
-  
-  .conversation-item:hover .conversation-delete-btn {
-    visibility: visible;
-    opacity: 1;
-  }
-  
-  .conversation-delete-btn.disabled {
-    color: #888;
-    cursor: not-allowed;
-  }
-  
-  .conversation-delete-btn.disabled:hover {
-    background-color: transparent;
-  }
-  
-  /* For dark mode compatibility */
-  html.dark-mode .conversation-delete-btn {
-    color: #ff7070;
-  }
-  
-  html.dark-mode .conversation-delete-btn.disabled {
-    color: #666;
-  }
-
-  /* Error message during initialization */
-.init-error {
-    margin: 20px;
-    padding: 15px 20px;
-    background-color: #fff0f0;
-    border-left: 4px solid #ff5050;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .init-error h3 {
-    margin-top: 0;
-    color: #d32f2f;
-  }
-  
-  .init-error button {
-    background-color: #f44336;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-  
-  .init-error button:hover {
-    background-color: #d32f2f;
-  }
-  
-  /* Dark mode styles */
-  html.dark-mode .init-error {
-    background-color: #2a2020;
-    border-left-color: #ff7070;
-  }
-  
-  html.dark-mode .init-error h3 {
-    color: #ff7070;
-  }
-  
-  html.dark-mode .init-error button {
-    background-color: #ff5252;
-  }
-  
-  html.dark-mode .init-error button:hover {
-    background-color: #ff7070;
-  }
-  
-  /* ConnectionStatus styles enhancement */
-  .connection-status {
-    transition: all 0.3s ease;
-  }
-  
-  .connection-status.error .status-dot {
-    animation: pulse-error 2s infinite;
-  }
-  
-  .connection-status.connected .status-dot {
-    animation: none;
-  }
-  
-  @keyframes pulse-error {
-    0% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-
-  /* Delete confirmation UI */
-.conversation-delete-confirm {
-    position: absolute;
-    right: 10px;
-    top: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    background-color: rgba(255, 255, 255, 0.95);
-    padding: 0 12px;
-    border-radius: 6px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    animation: slide-in 0.2s ease-out;
-    z-index: 5;
-  }
-  
-  @keyframes slide-in {
-    from {
-      opacity: 0;
-      transform: translateX(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-  
-  .conversation-delete-confirm span {
-    margin-right: 10px;
-    font-size: 14px;
-    color: #333;
-  }
-  
-  .confirm-buttons {
-    display: flex;
-    gap: 8px;
-  }
-  
-  .confirm-buttons button {
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .confirm-yes {
-    background-color: #f44336;
-    color: white;
-  }
-  
-  .confirm-yes:hover {
-    background-color: #d32f2f;
-  }
-  
-  .confirm-no {
-    background-color: #e0e0e0;
-    color: #333;
-  }
-  
-  .confirm-no:hover {
-    background-color: #bdbdbd;
-  }
-  
-  /* Make sure the conversation item has position relative for absolute positioning */
-  .conversation-item {
-    position: relative;
-  }
-  
-  /* Dark mode styles */
-  html.dark-mode .conversation-delete-confirm {
-    background-color: rgba(50, 50, 50, 0.95);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  }
-  
-  html.dark-mode .conversation-delete-confirm span {
-    color: #e0e0e0;
-  }
-  
-  html.dark-mode .confirm-no {
-    background-color: #424242;
-    color: #e0e0e0;
-  }
-  
-  html.dark-mode .confirm-no:hover {
-    background-color: #616161;
-  }
-  
-  /* Ensure the delete button isn't hidden when confirmation is shown */
-  .conversation-item:has(.conversation-delete-confirm) .conversation-delete-btn {
-    visibility: hidden;
-  }
-  
-  /* Model indicator in header */
+/* Model indicator in header */
 .model-indicator {
     display: flex;
     align-items: center;
@@ -1075,8 +982,8 @@ pre, code {
     color: var(--text-secondary);
     cursor: pointer;
     padding: 0;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1123,76 +1030,106 @@ pre, code {
     color: var(--text-secondary);
 }
 
-@keyframes slide-in {
-    from {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+/* Error message during initialization */
+.init-error {
+    margin: 20px;
+    padding: 15px 20px;
+    background-color: #fff0f0;
+    border-left: 4px solid #ff5050;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .model-switcher-panel {
-        right: 10px;
-        width: calc(100% - 20px);
-        max-width: 300px;
-    }
+  
+.init-error h3 {
+    margin-top: 0;
+    color: #d32f2f;
 }
-
-/* New sidebar toggle button styles */
-.sidebar-toggle-new {
-    position: fixed;
-    left: 250px; /* Matches sidebar width */
-    top: 80px; /* Positions below the header */
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-left: none; /* Remove left border to blend with sidebar */
-    border-radius: 0 8px 8px 0;
-    width: 32px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  
+.init-error button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
     cursor: pointer;
-    z-index: 5;
-    box-shadow: 2px 0 5px var(--shadow-color);
-    transition: left 0.3s ease, transform 0.3s ease;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+  
+.init-error button:hover {
+    background-color: #d32f2f;
+}
+
+/* Code styles */
+pre, code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1em;
+    line-height: 1.4;
+}
+
+/* Icons */
+.settings-icon {
     color: var(--text-secondary);
 }
 
-.sidebar-toggle-new:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+.refresh-icon {
+    color: white;
 }
 
-.sidebar-toggle-new .toggle-icon {
-    width: 20px;
-    height: 20px;
-    transition: transform 0.3s ease;
+/* Disabled state styles */
+.disabled,
+#newChatButton.disabled,
+.conversation-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed !important;
 }
 
-/* When sidebar is not active, move the button to the left edge */
-.sidebar-toggle-new.sidebar-closed {
-    left: 0;
-    border-radius: 0 8px 8px 0;
-    border-left: 1px solid var(--border-color);
+/* Dark mode specific styles */
+html.dark-mode .conversation-delete-btn {
+    color: #ff7070;
+}
+  
+html.dark-mode .conversation-delete-btn.disabled {
+    color: #666;
 }
 
-/* Rotate icon based on sidebar state */
-.sidebar-toggle-new.sidebar-closed .toggle-icon {
-    transform: rotate(180deg);
+html.dark-mode .init-error {
+    background-color: #2a2020;
+    border-left-color: #ff7070;
+}
+  
+html.dark-mode .init-error h3 {
+    color: #ff7070;
+}
+  
+html.dark-mode .init-error button {
+    background-color: #ff5252;
+}
+  
+html.dark-mode .init-error button:hover {
+    background-color: #ff7070;
 }
 
-/* Adjust main content padding when sidebar is active */
-.main-content.sidebar-active {
-    padding-left: 250px;
+html.dark-mode .conversation-delete-confirm {
+    background-color: rgba(50, 50, 50, 0.95);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+  
+html.dark-mode .conversation-delete-confirm span {
+    color: #e0e0e0;
+}
+  
+html.dark-mode .confirm-no {
+    background-color: #424242;
+    color: #e0e0e0;
+}
+  
+html.dark-mode .confirm-no:hover {
+    background-color: #616161;
 }
 
-/* Responsive adjustments */
+/* Responsive styles */
 @media (max-width: 768px) {
     .sidebar-toggle-new {
         top: 60px;
@@ -1206,4 +1143,77 @@ pre, code {
         width: 100%;
         max-width: 250px;
     }
+    
+    .model-switcher-panel {
+        right: 10px;
+        width: calc(100% - 20px);
+        max-width: 300px;
+    }
 }
+
+@media (max-width: 640px) {
+    .message {
+        max-width: 90%;
+    }
+    
+    .sidebar {
+        position: absolute;
+        height: 100%;
+        z-index: 10;
+    }
+}
+
+/* Container for conversation buttons */
+.conversation-btn-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  /* Style for the download button in conversation items */
+  .conversation-download-btn {
+    visibility: hidden;
+    opacity: 0;
+    background: none;
+    border: none;
+    color: #2196F3; /* Material blue color */
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 0;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Show download button on hover */
+  .conversation-item:hover .conversation-download-btn {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .conversation-download-btn:hover {
+    background-color: rgba(33, 150, 243, 0.1); /* Light blue background on hover */
+  }
+  
+  /* Adjust the existing delete button styles to work with the new container */
+  .conversation-delete-btn {
+    margin-left: 0;
+  }
+  
+  /* Ensure the conversation item layout works with the new button container */
+  .conversation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Dark mode support */
+  html.dark-mode .conversation-download-btn {
+    color: #90CAF9; /* Lighter blue for dark mode */
+  }
+  
+  html.dark-mode .conversation-download-btn:hover {
+    background-color: rgba(144, 202, 249, 0.1); /* Lighter blue background on hover for dark mode */
+  }
