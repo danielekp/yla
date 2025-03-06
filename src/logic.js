@@ -102,92 +102,94 @@ const ChatApp = (function () {
     }
 
     function addMessageToCurrentConversation(message) {
-        const conversation = getCurrentConversation();
-        
-        if (!conversation) {
-          console.error('No active conversation to add message to - creating new conversation');
-          const newConversation = createConversation();
-          newConversation.messages.push(message);
-          
-          // Update title with first user message if this is the first message
-          if (message.role === 'user') {
-            newConversation.title =
-              message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
-          }
-        } else {
-          // Validate message object
-          if (!message || !message.role || message.content === undefined) {
-            console.error('Invalid message object:', message);
-            return;
-          }
-          
-          // Add message to existing conversation
-          conversation.messages.push(message);
-    
-          // Update title with first user message if this is the first message
-          if (
-            message.role === 'user' &&
-            conversation.messages.filter((m) => m.role === 'user').length === 1
-          ) {
-            conversation.title =
-              message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
-          }
+      const conversation = getCurrentConversation();
+
+      if (!conversation) {
+        console.error('No active conversation to add message to - creating new conversation');
+        const newConversation = createConversation();
+        newConversation.messages.push(message);
+
+        // Update title with first user message if this is the first message
+        if (message.role === 'user') {
+          newConversation.title =
+            message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
         }
-    
-        // Make sure to persist state after adding the message
-        persistState();
+      } else {
+        // Validate message object
+        if (!message || !message.role || message.content === undefined) {
+          console.error('Invalid message object:', message);
+          return;
+        }
+
+        // Add message to existing conversation
+        conversation.messages.push(message);
+
+        // Update title with first user message if this is the first message
+        if (
+          message.role === 'user' &&
+          conversation.messages.filter((m) => m.role === 'user').length === 1
+        ) {
+          conversation.title =
+            message.content.substring(0, 30) + (message.content.length > 30 ? '...' : '');
+        }
       }
 
+      // Make sure to persist state after adding the message
+      persistState();
+    }
+
     /**
-    * Estimates the number of tokens in text with high accuracy
-    * @param {string} text - The text to estimate tokens for
-    * @returns {number} - Estimated token count
-    */
+     * Estimates the number of tokens in text with high accuracy
+     * @param {string} text - The text to estimate tokens for
+     * @returns {number} - Estimated token count
+     */
     function estimateTokens(text) {
-    if (!text) return 0;
-    
-    // Replace code blocks with placeholders for more accurate estimation
-    const codeBlockRegex = /```[\s\S]*?```/g;
-    const codeBlocks = text.match(codeBlockRegex) || [];
-    
-    // Handle code blocks separately (they tokenize differently)
-    let codeBlockTokens = 0;
-    codeBlocks.forEach(block => {
+      if (!text) return 0;
+
+      // Replace code blocks with placeholders for more accurate estimation
+      const codeBlockRegex = /```[\s\S]*?```/g;
+      const codeBlocks = text.match(codeBlockRegex) || [];
+
+      // Handle code blocks separately (they tokenize differently)
+      let codeBlockTokens = 0;
+      codeBlocks.forEach((block) => {
         // Code typically has higher token-to-character ratio due to tokenization of symbols
         const lines = block.split('\n').length;
         const chars = block.length;
         // Base token count plus overhead for each line and special chars
-        codeBlockTokens += Math.ceil(chars / 3) + (lines * 0.5);
-    });
-    
-    // Remove code blocks from text for separate processing
-    let processedText = text.replace(codeBlockRegex, '');
-    
-    // Special token handling for markdown formatting
-    const markdownTokens = (processedText.match(/[*_`#>-]|<\/?[a-z]+>/g) || []).length;
-    
-    // Accurate token estimation for normal text
-    // Split by whitespace for words, but also count punctuation
-    const words = processedText.split(/\s+/).filter(Boolean).length;
-    const punctuation = (processedText.match(/[.,;:!?()[\]{}'"]/g) || []).length;
-    
-    // URLs and technical terms tend to tokenize into more tokens than regular words
-    const urlsAndTechnical = (processedText.match(/https?:\/\/\S+|\b[A-Z][a-z]+[A-Z]\w+\b|\b[A-Z]{2,}\b/g) || []).length;
-    
-    // Calculate base token count (cl100k tokenizer averages ~1.3 tokens per word for English)
-    const baseTokens = Math.ceil(words * 1.3);
-    
-    // Add tokens for punctuation (each typically counts as one token)
-    const punctuationTokens = punctuation;
-    
-    // Add extra tokens for URLs and technical terms (they tokenize into more tokens)
-    const technicalTokens = urlsAndTechnical * 2;
-    
-    // Add tokens for markdown formatting
-    const formattingTokens = markdownTokens;
-    
-    // Return the total estimated token count
-    return baseTokens + punctuationTokens + technicalTokens + formattingTokens + codeBlockTokens;
+        codeBlockTokens += Math.ceil(chars / 3) + lines * 0.5;
+      });
+
+      // Remove code blocks from text for separate processing
+      let processedText = text.replace(codeBlockRegex, '');
+
+      // Special token handling for markdown formatting
+      const markdownTokens = (processedText.match(/[*_`#>-]|<\/?[a-z]+>/g) || []).length;
+
+      // Accurate token estimation for normal text
+      // Split by whitespace for words, but also count punctuation
+      const words = processedText.split(/\s+/).filter(Boolean).length;
+      const punctuation = (processedText.match(/[.,;:!?()[\]{}'"]/g) || []).length;
+
+      // URLs and technical terms tend to tokenize into more tokens than regular words
+      const urlsAndTechnical = (
+        processedText.match(/https?:\/\/\S+|\b[A-Z][a-z]+[A-Z]\w+\b|\b[A-Z]{2,}\b/g) || []
+      ).length;
+
+      // Calculate base token count (cl100k tokenizer averages ~1.3 tokens per word for English)
+      const baseTokens = Math.ceil(words * 1.3);
+
+      // Add tokens for punctuation (each typically counts as one token)
+      const punctuationTokens = punctuation;
+
+      // Add extra tokens for URLs and technical terms (they tokenize into more tokens)
+      const technicalTokens = urlsAndTechnical * 2;
+
+      // Add tokens for markdown formatting
+      const formattingTokens = markdownTokens;
+
+      // Return the total estimated token count
+      return baseTokens + punctuationTokens + technicalTokens + formattingTokens + codeBlockTokens;
     }
 
     /**
@@ -196,29 +198,29 @@ const ChatApp = (function () {
      * @returns {number} - Estimated token count
      */
     function estimateMessageTokens(message) {
-    if (!message || !message.content) return 0;
-    
-    // Base token overhead for each message (role encoding, formatting)
-    const roleOverhead = 4; // ~4 tokens for role encoding
-    
-    // Calculate content tokens
-    const contentTokens = estimateTokens(message.content);
-    
-    // Thinking sections in assistant messages have additional tokens
-    let thinkingTokens = 0;
-    if (message.role === 'assistant') {
+      if (!message || !message.content) return 0;
+
+      // Base token overhead for each message (role encoding, formatting)
+      const roleOverhead = 4; // ~4 tokens for role encoding
+
+      // Calculate content tokens
+      const contentTokens = estimateTokens(message.content);
+
+      // Thinking sections in assistant messages have additional tokens
+      let thinkingTokens = 0;
+      if (message.role === 'assistant') {
         const thinkMatch = message.content.match(/<think>([\s\S]*?)<\/think>/);
         if (thinkMatch) {
-        // The <think> tags themselves add tokens
-        thinkingTokens = 4; // ~2 tokens for each tag
-        
-        // Estimate tokens in the thinking content
-        const thinkContent = thinkMatch[1];
-        thinkingTokens += estimateTokens(thinkContent);
+          // The <think> tags themselves add tokens
+          thinkingTokens = 4; // ~2 tokens for each tag
+
+          // Estimate tokens in the thinking content
+          const thinkContent = thinkMatch[1];
+          thinkingTokens += estimateTokens(thinkContent);
         }
-    }
-    
-    return roleOverhead + contentTokens + thinkingTokens;
+      }
+
+      return roleOverhead + contentTokens + thinkingTokens;
     }
 
     /**
@@ -227,16 +229,18 @@ const ChatApp = (function () {
      * @returns {number} - Total estimated token count
      */
     function estimateMessagesTokens(messages) {
-    if (!Array.isArray(messages) || messages.length === 0) return 0;
-    
-    // For message arrays, there's a small metadata overhead
-    const metadataOverhead = 2;
-    
-    // Sum up tokens for all messages
-    const messageTokens = messages.reduce((sum, message) => 
-        sum + estimateMessageTokens(message), 0);
-    
-    return metadataOverhead + messageTokens;
+      if (!Array.isArray(messages) || messages.length === 0) return 0;
+
+      // For message arrays, there's a small metadata overhead
+      const metadataOverhead = 2;
+
+      // Sum up tokens for all messages
+      const messageTokens = messages.reduce(
+        (sum, message) => sum + estimateMessageTokens(message),
+        0
+      );
+
+      return metadataOverhead + messageTokens;
     }
 
     /**
@@ -247,59 +251,59 @@ const ChatApp = (function () {
      * @returns {number} - Importance score (higher = more important)
      */
     function calculateMessageImportance(message, allMessages, messageIndex) {
-    if (!message || !message.content) return 0;
-    
-    let importance = 0;
-    
-    // System messages are highest priority
-    if (message.role === 'system') {
+      if (!message || !message.content) return 0;
+
+      let importance = 0;
+
+      // System messages are highest priority
+      if (message.role === 'system') {
         importance += 100;
-    }
-    
-    // Recency is important (more recent = more relevant to current context)
-    // Scale from 0-20 based on position
-    const recencyScore = 20 * (messageIndex / Math.max(1, allMessages.length - 1));
-    importance += recencyScore;
-    
-    // Content length can indicate information density
-    // But we want to normalize this to avoid biasing too much toward verbose messages
-    const contentLength = message.content.length;
-    const lengthScore = Math.min(10, contentLength / 100); // Cap at 10 points
-    importance += lengthScore;
-    
-    // Check for likely important content indicators
-    const content = message.content.toLowerCase();
-    
-    // Questions tend to be important context
-    if (content.includes('?')) {
+      }
+
+      // Recency is important (more recent = more relevant to current context)
+      // Scale from 0-20 based on position
+      const recencyScore = 20 * (messageIndex / Math.max(1, allMessages.length - 1));
+      importance += recencyScore;
+
+      // Content length can indicate information density
+      // But we want to normalize this to avoid biasing too much toward verbose messages
+      const contentLength = message.content.length;
+      const lengthScore = Math.min(10, contentLength / 100); // Cap at 10 points
+      importance += lengthScore;
+
+      // Check for likely important content indicators
+      const content = message.content.toLowerCase();
+
+      // Questions tend to be important context
+      if (content.includes('?')) {
         importance += 5;
-    }
-    
-    // Code blocks often contain important information
-    if (content.includes('```')) {
+      }
+
+      // Code blocks often contain important information
+      if (content.includes('```')) {
         importance += 8;
-    }
-    
-    // Lists often contain structured, important information
-    if (content.match(/(\n[*-]|\n\d+\.)/)) {
+      }
+
+      // Lists often contain structured, important information
+      if (content.match(/(\n[*-]|\n\d+\.)/)) {
         importance += 5;
-    }
-    
-    // Specific request indicators
-    if (content.match(/\bplease\b|\bcan you\b|\bcould you\b/)) {
+      }
+
+      // Specific request indicators
+      if (content.match(/\bplease\b|\bcan you\b|\bcould you\b/)) {
         importance += 3;
-    }
-    
-    // Messages containing key information terms
-    if (content.match(/\bimportant\b|\bnote\b|\bremember\b|\bkey\b|\bessential\b/)) {
+      }
+
+      // Messages containing key information terms
+      if (content.match(/\bimportant\b|\bnote\b|\bremember\b|\bkey\b|\bessential\b/)) {
         importance += 7;
-    }
-    
-    // References to specific entities (might be important for context)
-    const namedEntityCount = (content.match(/\b[A-Z][a-z]+\b/g) || []).length;
-    importance += Math.min(5, namedEntityCount);
-    
-    return importance;
+      }
+
+      // References to specific entities (might be important for context)
+      const namedEntityCount = (content.match(/\b[A-Z][a-z]+\b/g) || []).length;
+      importance += Math.min(5, namedEntityCount);
+
+      return importance;
     }
 
     /**
@@ -308,27 +312,30 @@ const ChatApp = (function () {
      * @returns {Object} - Map of message indices to their paired indices
      */
     function identifyMessagePairs(messages) {
-    const pairs = {};
-    
-    for (let i = 0; i < messages.length - 1; i++) {
+      const pairs = {};
+
+      for (let i = 0; i < messages.length - 1; i++) {
         // Identify user-assistant pairs (Q&A pairs)
-        if (messages[i].role === 'user' && messages[i+1].role === 'assistant') {
-        pairs[i] = i+1;
-        pairs[i+1] = i;
+        if (messages[i].role === 'user' && messages[i + 1].role === 'assistant') {
+          pairs[i] = i + 1;
+          pairs[i + 1] = i;
         }
-        
+
         // Identify followup clarifications
-        if (i < messages.length - 2 && 
-            messages[i].role === 'assistant' && 
-            messages[i+1].role === 'user' && 
-            messages[i+2].role === 'assistant' &&
-            messages[i+1].content.length < 100) { // Short user message might be a clarification
-        pairs[i+1] = i+2;
-        pairs[i+2] = i+1;
+        if (
+          i < messages.length - 2 &&
+          messages[i].role === 'assistant' &&
+          messages[i + 1].role === 'user' &&
+          messages[i + 2].role === 'assistant' &&
+          messages[i + 1].content.length < 100
+        ) {
+          // Short user message might be a clarification
+          pairs[i + 1] = i + 2;
+          pairs[i + 2] = i + 1;
         }
-    }
-    
-    return pairs;
+      }
+
+      return pairs;
     }
 
     /**
@@ -338,117 +345,122 @@ const ChatApp = (function () {
      * @returns {Array} - Truncated array of messages
      */
     function smartTruncateConversationHistory(messages, maxTokens) {
-    if (!Array.isArray(messages) || messages.length === 0) return [];
-    if (!maxTokens || maxTokens <= 0) return [];
-    
-    // If we're already under the token limit, return all messages
-    const totalTokens = estimateMessagesTokens(messages);
-    if (totalTokens <= maxTokens) return [...messages];
-    
-    // Always extract and keep system messages
-    const systemMessages = messages.filter(m => m.role === 'system');
-    const systemTokens = estimateMessagesTokens(systemMessages);
-    
-    // Reserve tokens for system messages
-    const remainingTokens = maxTokens - systemTokens;
-    if (remainingTokens <= 0) {
+      if (!Array.isArray(messages) || messages.length === 0) return [];
+      if (!maxTokens || maxTokens <= 0) return [];
+
+      // If we're already under the token limit, return all messages
+      const totalTokens = estimateMessagesTokens(messages);
+      if (totalTokens <= maxTokens) return [...messages];
+
+      // Always extract and keep system messages
+      const systemMessages = messages.filter((m) => m.role === 'system');
+      const systemTokens = estimateMessagesTokens(systemMessages);
+
+      // Reserve tokens for system messages
+      const remainingTokens = maxTokens - systemTokens;
+      if (remainingTokens <= 0) {
         // If system messages alone exceed token limit, we need to truncate them
         // (rare case, but we should handle it)
         return smartTruncateMessages(systemMessages, maxTokens);
-    }
-    
-    // Non-system messages for processing
-    const nonSystemMessages = messages.filter(m => m.role !== 'system');
-    
-    // Always keep the most recent exchange (last user message and response if available)
-    let recentMessages = [];
-    const lastUserIndex = findLastIndex(nonSystemMessages, m => m.role === 'user');
-    
-    if (lastUserIndex !== -1) {
+      }
+
+      // Non-system messages for processing
+      const nonSystemMessages = messages.filter((m) => m.role !== 'system');
+
+      // Always keep the most recent exchange (last user message and response if available)
+      let recentMessages = [];
+      const lastUserIndex = findLastIndex(nonSystemMessages, (m) => m.role === 'user');
+
+      if (lastUserIndex !== -1) {
         recentMessages.push(nonSystemMessages[lastUserIndex]);
         // Include the assistant's response if it exists
-        if (lastUserIndex < nonSystemMessages.length - 1 && 
-            nonSystemMessages[lastUserIndex + 1].role === 'assistant') {
-        recentMessages.push(nonSystemMessages[lastUserIndex + 1]);
+        if (
+          lastUserIndex < nonSystemMessages.length - 1 &&
+          nonSystemMessages[lastUserIndex + 1].role === 'assistant'
+        ) {
+          recentMessages.push(nonSystemMessages[lastUserIndex + 1]);
         }
-    }
-    
-    const recentTokens = estimateMessagesTokens(recentMessages);
-    
-    // Update remaining tokens after reserving for recent messages
-    const remainingAfterRecent = remainingTokens - recentTokens;
-    if (remainingAfterRecent <= 0) {
+      }
+
+      const recentTokens = estimateMessagesTokens(recentMessages);
+
+      // Update remaining tokens after reserving for recent messages
+      const remainingAfterRecent = remainingTokens - recentTokens;
+      if (remainingAfterRecent <= 0) {
         // If recent messages exceed remaining tokens, we must sacrifice some content
         return [...systemMessages, ...smartTruncateMessages(recentMessages, remainingTokens)];
-    }
-    
-    // Calculate importance scores for remaining messages
-    const candidateMessages = nonSystemMessages.filter(
+      }
+
+      // Calculate importance scores for remaining messages
+      const candidateMessages = nonSystemMessages.filter(
         (_, index) => !recentMessages.includes(nonSystemMessages[index])
-    );
-    
-    const scoredMessages = candidateMessages.map((message, index) => ({
+      );
+
+      const scoredMessages = candidateMessages.map((message, index) => ({
         message,
         originalIndex: nonSystemMessages.indexOf(message),
         importance: calculateMessageImportance(
-        message, 
-        nonSystemMessages, 
-        nonSystemMessages.indexOf(message)
+          message,
+          nonSystemMessages,
+          nonSystemMessages.indexOf(message)
         ),
-        tokens: estimateMessageTokens(message)
-    }));
-    
-    // Identify messages that should be kept together
-    const messagePairs = identifyMessagePairs(nonSystemMessages);
-    
-    // Sort by importance (descending)
-    scoredMessages.sort((a, b) => b.importance - a.importance);
-    
-    // Select messages until we reach the token limit
-    const selectedMessages = [];
-    let usedTokens = 0;
-    
-    for (const scored of scoredMessages) {
+        tokens: estimateMessageTokens(message),
+      }));
+
+      // Identify messages that should be kept together
+      const messagePairs = identifyMessagePairs(nonSystemMessages);
+
+      // Sort by importance (descending)
+      scoredMessages.sort((a, b) => b.importance - a.importance);
+
+      // Select messages until we reach the token limit
+      const selectedMessages = [];
+      let usedTokens = 0;
+
+      for (const scored of scoredMessages) {
         // Check if this message would exceed our remaining token budget
         if (usedTokens + scored.tokens > remainingAfterRecent) {
-        continue;
+          continue;
         }
-        
+
         // Add the message
         selectedMessages.push({
-        message: scored.message,
-        originalIndex: scored.originalIndex
+          message: scored.message,
+          originalIndex: scored.originalIndex,
         });
         usedTokens += scored.tokens;
-        
+
         // Check if this message has a paired message we should also include
         const pairedIndex = messagePairs[scored.originalIndex];
-        if (pairedIndex !== undefined && !selectedMessages.some(m => m.originalIndex === pairedIndex)) {
-        const pairedMessage = nonSystemMessages[pairedIndex];
-        const pairedTokens = estimateMessageTokens(pairedMessage);
-        
-        // Only add the paired message if we have enough tokens
-        if (usedTokens + pairedTokens <= remainingAfterRecent) {
+        if (
+          pairedIndex !== undefined &&
+          !selectedMessages.some((m) => m.originalIndex === pairedIndex)
+        ) {
+          const pairedMessage = nonSystemMessages[pairedIndex];
+          const pairedTokens = estimateMessageTokens(pairedMessage);
+
+          // Only add the paired message if we have enough tokens
+          if (usedTokens + pairedTokens <= remainingAfterRecent) {
             selectedMessages.push({
-            message: pairedMessage,
-            originalIndex: pairedIndex
+              message: pairedMessage,
+              originalIndex: pairedIndex,
             });
             usedTokens += pairedTokens;
+          }
         }
-        }
-    }
-    
-    // Sort selected messages by their original order
-    selectedMessages.sort((a, b) => a.originalIndex - b.originalIndex);
-    
-    // Combine system, selected, and recent messages in the proper order
-    const result = [
+      }
+
+      // Sort selected messages by their original order
+      selectedMessages.sort((a, b) => a.originalIndex - b.originalIndex);
+
+      // Combine system, selected, and recent messages in the proper order
+      const result = [
         ...systemMessages,
-        ...selectedMessages.map(m => m.message),
-        ...recentMessages
-    ];
-    
-    return result;
+        ...selectedMessages.map((m) => m.message),
+        ...recentMessages,
+      ];
+
+      return result;
     }
 
     /**
@@ -458,52 +470,49 @@ const ChatApp = (function () {
      * @returns {Array} - Truncated messages
      */
     function smartTruncateMessages(messages, maxTokens) {
-    if (messages.length <= 1) return messages;
-    
-    // If we have multiple messages, try to truncate content rather than removing messages
-    const result = [...messages];
-    let totalTokens = estimateMessagesTokens(result);
-    
-    // If we need to truncate, start with reducing content length
-    if (totalTokens > maxTokens) {
+      if (messages.length <= 1) return messages;
+
+      // If we have multiple messages, try to truncate content rather than removing messages
+      const result = [...messages];
+      let totalTokens = estimateMessagesTokens(result);
+
+      // If we need to truncate, start with reducing content length
+      if (totalTokens > maxTokens) {
         // Sort by length (descending) so we truncate the longest messages first
-        const messagesByLength = [...result].sort(
-        (a, b) => b.content.length - a.content.length
-        );
-        
+        const messagesByLength = [...result].sort((a, b) => b.content.length - a.content.length);
+
         for (const message of messagesByLength) {
-        if (totalTokens <= maxTokens) break;
-        
-        const originalMessage = result.find(m => m === message);
-        if (!originalMessage) continue;
-        
-        const originalTokens = estimateMessageTokens(originalMessage);
-        
-        // Calculate how many tokens we need to save
-        const tokensToSave = Math.min(
+          if (totalTokens <= maxTokens) break;
+
+          const originalMessage = result.find((m) => m === message);
+          if (!originalMessage) continue;
+
+          const originalTokens = estimateMessageTokens(originalMessage);
+
+          // Calculate how many tokens we need to save
+          const tokensToSave = Math.min(
             originalTokens - 20, // Keep at least some minimal content
             totalTokens - maxTokens + 10 // +10 for safety margin
-        );
-        
-        if (tokensToSave <= 0) continue;
-        
-        // Estimate characters to remove (rough approximation)
-        const charsToRemove = Math.ceil(tokensToSave * 3);
-        
-        // Truncate the message with an indicator
-        const newContent = originalMessage.content.substring(
-            0, 
-            originalMessage.content.length - charsToRemove
-        ) + "... [truncated]";
-        
-        originalMessage.content = newContent;
-        
-        // Recalculate total tokens
-        totalTokens = estimateMessagesTokens(result);
+          );
+
+          if (tokensToSave <= 0) continue;
+
+          // Estimate characters to remove (rough approximation)
+          const charsToRemove = Math.ceil(tokensToSave * 3);
+
+          // Truncate the message with an indicator
+          const newContent =
+            originalMessage.content.substring(0, originalMessage.content.length - charsToRemove) +
+            '... [truncated]';
+
+          originalMessage.content = newContent;
+
+          // Recalculate total tokens
+          totalTokens = estimateMessagesTokens(result);
         }
-    }
-    
-    return result;
+      }
+
+      return result;
     }
 
     /**
@@ -513,12 +522,12 @@ const ChatApp = (function () {
      * @returns {number} - The last index or -1 if not found
      */
     function findLastIndex(array, predicate) {
-    for (let i = array.length - 1; i >= 0; i--) {
+      for (let i = array.length - 1; i >= 0; i--) {
         if (predicate(array[i], i, array)) {
-        return i;
+          return i;
         }
-    }
-    return -1;
+      }
+      return -1;
     }
 
     /**
@@ -527,10 +536,10 @@ const ChatApp = (function () {
      * @returns {Array} Truncated conversation history
      */
     function truncateConversationHistory(maxTokens) {
-    const conversation = getCurrentConversation();
-    if (!conversation) return [];
-    
-    return smartTruncateConversationHistory(conversation.messages, maxTokens);
+      const conversation = getCurrentConversation();
+      if (!conversation) return [];
+
+      return smartTruncateConversationHistory(conversation.messages, maxTokens);
     }
 
     function updateConversationAfterResend(messageContent) {
@@ -620,26 +629,26 @@ const ChatApp = (function () {
         onComplete,
         onError,
       } = options;
-  
+
       // Get the current model settings from the updated interface
       const currentModel = selectedModelSettings.get();
-  
+
       if (!currentModel) {
         onError(new Error('No model selected'));
         return;
       }
-  
+
       const endpoint = config.api.endpoint;
       const model = currentModel.name;
       const num_ctx = currentModel.num_ctx;
-  
+
       // Prepare conversation history - DEBUG FORMAT TO VERIFY STRUCTURE
       const messages = StateManager.truncateConversationHistory(num_ctx);
-      console.log("Sending messages to API:", JSON.stringify(messages, null, 2));
-  
+      console.log('Sending messages to API:', JSON.stringify(messages, null, 2));
+
       // Format messages properly for the API
       const formattedMessages = formatMessagesForAPI(messages);
-  
+
       const payload = {
         model: model,
         messages: formattedMessages,
@@ -650,12 +659,12 @@ const ChatApp = (function () {
         },
         stream: true,
       };
-  
+
       // Variables to accumulate content
       let currentSection = '';
       let thinkContent = '';
       let responseContent = '';
-  
+
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -664,38 +673,38 @@ const ChatApp = (function () {
           },
           body: JSON.stringify(payload),
         });
-  
+
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-  
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-  
+
         let done = false;
         while (!done) {
           const { value, done: readerDone } = await reader.read();
           done = readerDone;
-  
+
           if (done) break;
-  
+
           const chunk = decoder.decode(value);
           const lines = chunk.split('\n');
-  
+
           for (const line of lines) {
             if (!line || !line.trim()) continue;
-  
+
             const trimmedLine = line.trim();
-  
+
             if (trimmedLine === 'data: [DONE]') continue;
-  
+
             if (trimmedLine.startsWith('data: ')) {
               let jsonStr = trimmedLine.slice(6).trim();
               try {
                 if (!jsonStr) continue;
-  
+
                 const data = JSON.parse(jsonStr);
-  
+
                 if (
                   data.choices &&
                   data.choices[0] &&
@@ -703,7 +712,7 @@ const ChatApp = (function () {
                   data.choices[0].delta.content !== undefined
                 ) {
                   const content = data.choices[0].delta.content;
-  
+
                   // Process different parts of the response
                   if (content.includes('<think>')) {
                     currentSection = 'think';
@@ -735,21 +744,21 @@ const ChatApp = (function () {
             }
           }
         }
-  
+
         // Compose the complete assistant message
         let assistantContent = '';
         if (thinkContent) {
           assistantContent += `<think>${thinkContent}</think>`;
         }
         assistantContent += responseContent;
-  
+
         onComplete && onComplete(assistantContent);
       } catch (error) {
         console.error('API call error:', error);
         onError && onError(error);
       }
     }
-  
+
     /**
      * Formats messages to ensure they're properly structured for the API
      * @param {Array} messages - Array of message objects
@@ -757,23 +766,23 @@ const ChatApp = (function () {
      */
     function formatMessagesForAPI(messages) {
       if (!Array.isArray(messages)) return [];
-      
-      return messages.map(message => {
+
+      return messages.map((message) => {
         // Create a clean message object with just role and content
         const formattedMessage = {
           role: message.role,
-          content: message.content
+          content: message.content,
         };
-        
+
         // Handle special case where content might be null or undefined
         if (!formattedMessage.content) {
-          formattedMessage.content = "";
+          formattedMessage.content = '';
         }
-        
+
         return formattedMessage;
       });
     }
-  
+
     return {
       callModel,
     };
@@ -1003,14 +1012,14 @@ const ChatApp = (function () {
     ) {
       const list = elements.conversationList;
       if (!list) return;
-
+    
       list.innerHTML = '';
-
+    
       // Global event handler for delete confirmation
       const handleDocumentClick = (e) => {
         const confirmations = document.querySelectorAll('.conversation-delete-confirm');
         if (confirmations.length === 0) return;
-
+    
         // If clicked outside any confirmation UI, remove all confirmations
         let clickedInside = false;
         confirmations.forEach((confirm) => {
@@ -1018,37 +1027,56 @@ const ChatApp = (function () {
             clickedInside = true;
           }
         });
-
+    
         if (!clickedInside) {
           confirmations.forEach((confirm) => confirm.remove());
           document.removeEventListener('click', handleDocumentClick);
         }
       };
-
+    
       conversations.forEach((conv) => {
         const item = document.createElement('div');
         item.classList.add('conversation-item');
         item.dataset.conversationId = conv.id;
-
+    
         if (conv.id === currentConversationId) {
           item.classList.add('active');
         }
-
+    
         // Create container for conversation title
         const titleSpan = document.createElement('span');
         titleSpan.className = 'conversation-title';
         titleSpan.textContent = conv.title || `Chat ${conv.id}`;
         item.appendChild(titleSpan);
-
+        
+        // Create button container to hold both buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'conversation-btn-container';
+        
+        // Create download button
+        const downloadButton = document.createElement('button');
+        downloadButton.className = 'conversation-download-btn';
+        downloadButton.title = 'Download this conversation';
+        downloadButton.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>
+            </svg>
+        `;
+        downloadButton.onclick = (e) => {
+          e.stopPropagation(); // Prevent triggering the conversation selection
+          ExportImportManager.downloadConversation(conv.id);
+        };
+        buttonContainer.appendChild(downloadButton);
+    
         // Create delete button (visible on hover)
         const deleteButton = document.createElement('button');
         deleteButton.className = 'conversation-delete-btn';
         deleteButton.innerHTML = `
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                    </svg>
-                `;
-
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+        `;
+    
         // Only allow deletion of non-active conversations
         if (conv.id === currentConversationId) {
           deleteButton.classList.add('disabled');
@@ -1057,28 +1085,28 @@ const ChatApp = (function () {
           deleteButton.title = 'Delete this conversation';
           deleteButton.onclick = (e) => {
             e.stopPropagation(); // Prevent triggering the conversation selection
-
+    
             // Remove any existing confirmation UI first
             const existingConfirmations = document.querySelectorAll('.conversation-delete-confirm');
             existingConfirmations.forEach((el) => el.remove());
-
+    
             // Create confirmation UI
             const confirmUI = document.createElement('div');
             confirmUI.className = 'conversation-delete-confirm';
             confirmUI.innerHTML = `
-                            <span>Delete?</span>
-                            <div class="confirm-buttons">
-                                <button class="confirm-yes">Yes</button>
-                                <button class="confirm-no">No</button>
-                            </div>
-                        `;
-
+                <span>Delete?</span>
+                <div class="confirm-buttons">
+                    <button class="confirm-yes">Yes</button>
+                    <button class="confirm-no">No</button>
+                </div>
+            `;
+    
             // Position the confirmation UI
             item.appendChild(confirmUI);
-
+    
             // Add global click handler to dismiss if clicked outside
             document.addEventListener('click', handleDocumentClick);
-
+    
             // Handle confirmation buttons
             confirmUI.querySelector('.confirm-yes').addEventListener('click', (e) => {
               e.stopPropagation();
@@ -1086,7 +1114,7 @@ const ChatApp = (function () {
               document.removeEventListener('click', handleDocumentClick);
               onConversationDelete(conv.id);
             });
-
+    
             confirmUI.querySelector('.confirm-no').addEventListener('click', (e) => {
               e.stopPropagation();
               confirmUI.remove();
@@ -1094,20 +1122,22 @@ const ChatApp = (function () {
             });
           };
         }
-
-        item.appendChild(deleteButton);
-
+        
+        buttonContainer.appendChild(deleteButton);
+        item.appendChild(buttonContainer);
+    
         // Set click handler for the entire item
         item.onclick = (e) => {
-          // Only select conversation if not clicking the delete button or confirmation
-          const isDeleteUI =
+          // Only select conversation if not clicking the buttons or confirmation
+          const isButtonUI =
             e.target.closest('.conversation-delete-btn') ||
+            e.target.closest('.conversation-download-btn') ||
             e.target.closest('.conversation-delete-confirm');
-          if (!isDeleteUI) {
+          if (!isButtonUI) {
             onConversationSelect(conv.id);
           }
         };
-
+    
         list.appendChild(item);
       });
     }
@@ -1123,22 +1153,27 @@ const ChatApp = (function () {
     }
 
     /**
-     * Toggles the sidebar visibility
+     * Toggles the sidebar visibility and updates the toggle button position
      */
     function toggleSidebar() {
       if (elements.sidebar) {
+        // Toggle sidebar visibility
         elements.sidebar.classList.toggle('active');
-        
+        const isActive = elements.sidebar.classList.contains('active');
+
         // Toggle the sidebar-closed class on the toggle button
         const toggleButton = document.getElementById('toggleSidebarButton');
         if (toggleButton) {
-          toggleButton.classList.toggle('sidebar-closed', !elements.sidebar.classList.contains('active'));
+          toggleButton.classList.toggle('sidebar-closed', !isActive);
+
+          // Animate the toggle button position
+          toggleButton.style.left = isActive ? '250px' : '0';
         }
-        
+
         // Toggle the sidebar-active class on main content for responsive layout
         const mainContent = document.querySelector('.main-content');
         if (mainContent) {
-          mainContent.classList.toggle('sidebar-active', elements.sidebar.classList.contains('active'));
+          mainContent.classList.toggle('sidebar-active', isActive);
         }
       }
     }
@@ -1325,50 +1360,58 @@ const ChatApp = (function () {
 
   const ExportImportManager = (function () {
     /**
-     * Downloads the current conversation as a text file
-     */
-    function downloadConversation() {
-      const currentConversation = StateManager.getCurrentConversation();
-      if (!currentConversation) {
-        UIManager.showToast('No conversation to download', 'warning');
-        return;
+ * Downloads a specific conversation as a text file
+ * @param {number} conversationId - ID of the conversation to download, defaults to current conversation
+ */
+function downloadConversation(conversationId) {
+  // If no ID provided, use current conversation
+  const targetConversationId = conversationId || StateManager.getCurrentConversation()?.id;
+  
+  if (!targetConversationId) {
+    return;
+  }
+  
+  // Get all conversations and find the one to download
+  const conversations = StateManager.getConversations();
+  const conversationToDownload = conversations.find(c => c.id === targetConversationId);
+  
+  if (!conversationToDownload) {
+    return;
+  }
+
+  let content = '';
+  conversationToDownload.messages.forEach((msg) => {
+    // Extract thinking from assistant messages if present
+    if (msg.role === 'assistant') {
+      const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
+      if (thinkMatch) {
+        const thinking = thinkMatch[1].trim();
+        const response = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
+        content += `Assistant (thinking):\n${thinking}\n\n`;
+        content += `Assistant (response):\n${response}\n\n`;
+      } else {
+        content += `Assistant: ${msg.content}\n\n`;
       }
-
-      let content = '';
-      currentConversation.messages.forEach((msg) => {
-        // Extract thinking from assistant messages if present
-        if (msg.role === 'assistant') {
-          const thinkMatch = msg.content.match(/<think>(.*?)<\/think>/s);
-          if (thinkMatch) {
-            const thinking = thinkMatch[1].trim();
-            const response = msg.content.replace(/<think>.*?<\/think>/s, '').trim();
-            content += `Assistant (thinking):\n${thinking}\n\n`;
-            content += `Assistant (response):\n${response}\n\n`;
-          } else {
-            content += `Assistant: ${msg.content}\n\n`;
-          }
-        } else {
-          content += `User: ${msg.content}\n\n`;
-        }
-      });
-
-      const blob = new Blob([content], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-
-      // Generate filename based on conversation title or date
-      const filename = currentConversation.title
-        ? `chat-${currentConversation.title.replace(/[^a-z0-9]/gi, '_').substring(0, 30)}.txt`
-        : `chat-${new Date().toISOString().slice(0, 10)}.txt`;
-
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-
-      UIManager.showToast('Conversation downloaded', 'success');
+    } else {
+      content += `User: ${msg.content}\n\n`;
     }
+  });
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+
+  // Generate filename based on conversation title or date
+  const filename = conversationToDownload.title
+    ? `chat-${conversationToDownload.title.replace(/[^a-z0-9]/gi, '_').substring(0, 30)}.txt`
+    : `chat-${new Date().toISOString().slice(0, 10)}.txt`;
+
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
 
     return {
       downloadConversation,
@@ -1385,46 +1428,46 @@ const ChatApp = (function () {
      */
     function sendMessage() {
       const currentModel = selectedModelSettings.get();
-  
+
       if (!currentModel) {
         UIManager.showToast('Please select a model first', 'warning');
         return;
       }
-  
+
       const temperature = currentModel.temperature;
       const top_k = currentModel.top_k;
       const top_p = currentModel.top_p;
-  
+
       const input = document.getElementById('messageInput');
       const message = input.value.trim();
-  
+
       if (!message || StateManager.isAppLoading()) {
         return;
       }
-  
+
       // Reset input
       input.value = '';
       input.style.height = '50px';
-  
+
       // Create conversation if it doesn't exist
       if (!StateManager.getCurrentConversation()) {
         StateManager.createConversation();
         UIManager.clearChatContainer();
       }
-  
+
       // Add message to UI
       UIManager.renderUserMessage(message);
-  
+
       // Add message to state - IMPORTANT: Do this before API call
       StateManager.addMessageToCurrentConversation({
         role: 'user',
         content: message,
       });
-      
+
       // Call model
       processModelCall(message, temperature, top_k, top_p);
     }
-  
+
     /**
      * Handles resending a message with different parameters
      * @param {string} message - The message to resend
@@ -1435,7 +1478,7 @@ const ChatApp = (function () {
     function resendMessage(message, temperature, top_k, top_p) {
       processModelCall(message, temperature, top_k, top_p, false);
     }
-  
+
     /**
      * Processes a model call with the given parameters
      * @param {string} message - The message to send
@@ -1447,10 +1490,10 @@ const ChatApp = (function () {
     function processModelCall(message, temperature, top_k, top_p, addToState = true) {
       // Set loading state
       StateManager.setLoading(true);
-  
+
       // Prepare UI for assistant response
       const uiElements = UIManager.prepareAssistantMessageUI();
-  
+
       // Call model
       ApiService.callModel({
         message,
@@ -1466,52 +1509,52 @@ const ChatApp = (function () {
         onComplete: (completeContent) => {
           // Verify we have response content
           if (!completeContent) {
-            console.error("Empty response content received from API");
+            console.error('Empty response content received from API');
             completeContent = "Sorry, I couldn't generate a proper response.";
           }
-  
+
           if (addToState) {
             // Double-check that we have a valid conversation
             if (!StateManager.getCurrentConversation()) {
-              console.error("No active conversation to add message to");
+              console.error('No active conversation to add message to');
               StateManager.createConversation();
             }
-            
+
             // Add the message to the state
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: completeContent,
             });
-            
+
             // Ensure state is persisted
             StateManager.persistState();
-            }
-  
+          }
+
           // Update conversation list to reflect new messages
           updateConversationList();
-  
+
           // Reset loading state
           StateManager.setLoading(false);
         },
         onError: (error) => {
           console.error('Error calling model:', error);
-  
+
           // Remove the message container
           uiElements.container.remove();
-  
+
           // Show error message
           UIManager.renderErrorMessage('Sorry, I encountered an error. Please try again.');
-  
+
           if (addToState) {
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: 'Sorry, I encountered an error. Please try again.',
             });
-            
+
             // Ensure state is persisted after error
             StateManager.persistState();
           }
-  
+
           // Reset loading state
           StateManager.setLoading(false);
         },
@@ -1538,12 +1581,6 @@ const ChatApp = (function () {
 
       // Clear chat container
       UIManager.clearChatContainer();
-
-      // Ensure sidebar is visible and update list
-      const sidebar = document.getElementById('sidebar');
-      if (sidebar && !sidebar.classList.contains('active')) {
-        sidebar.classList.add('active');
-      }
 
       updateConversationList();
 

@@ -22,12 +22,7 @@
             <button class="theme-toggle-button" id="themeToggleButton">
                 <img src="media/moon.png" alt="Toggle Theme" class="theme-toggle-icon">
             </button>
-            <button class="download-button" id="downloadButton">
-                <img src="media/download_chat.png" alt="Download Chat" class="theme-toggle-icon">
-            </button>
-            <button class="new-chat-button" id="newChatButton">
-                <img src="media/new_chat.png" alt="New Chat" class="theme-toggle-icon">
-            </button>
+            <!-- Removing the New Chat button from here -->
         </div>
     </div>
     
@@ -39,6 +34,15 @@
 
     <div class="main-content hidden">
         <div class="sidebar" id="sidebar">
+            <!-- Adding the New Chat button to the sidebar -->
+            <div class="sidebar-new-chat">
+                <button class="sidebar-new-chat-button" id="newChatButton">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+            </div>
             <div class="conversation-list" id="conversationList">
                 <!-- Conversations will be added here -->
             </div>
@@ -61,9 +65,12 @@
                         id="messageInput"
                         rows="1"
                         placeholder="Type here.."></textarea>
-                    <button class="send-button" id="sendButton">
-                        <img src="media/send.png" alt="Send" class="send-icon">
-                    </button>
+                        <button class="send-button" id="sendButton">
+                            <svg class="send-icon" viewBox="0 0 24 24" width="24" height="24">
+                              <!-- Custom speech bubble icon based on provided image -->
+                              <path class="send-icon-path" d="M5,4 h10 c2,0 3,0 3,2 v2 c0,2 1,3 3,3 c-1,1 -2,0 -3,2 v2 c0,2 -1,2 -3,2 h-10 c-2,0 -3,0 -3,-2 v-6 c0,-2 1,-3 3,-3 z M4,17 c-1,1 -2,2 -2,4 c2,-1 3,-2 4,-3 M9,20 a1,1 0 1 1 0,-2 a1,1 0 0 1 0,2 z M7,22 a0.7,0.7 0 1 1 0,-1.4 a0.7,0.7 0 0 1 0,1.4 z M5,23 a0.5,0.5 0 1 1 0,-1 a0.5,0.5 0 0 1 0,1 z"></path>
+                            </svg>
+                          </button>
                 </div>
             </div>
         </div>
