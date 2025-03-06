@@ -1217,3 +1217,155 @@ html.dark-mode .confirm-no:hover {
   html.dark-mode .conversation-download-btn:hover {
     background-color: rgba(144, 202, 249, 0.1); /* Lighter blue background on hover for dark mode */
   }
+
+  /* New Chat button in sidebar */
+.sidebar-new-chat {
+    margin-bottom: 16px;
+    padding: 0 0 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-new-chat-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-new-chat-button:hover {
+    background-color: #16a34a;
+}
+
+.sidebar-new-chat-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Make sure the sidebar accommodates the new element properly */
+.sidebar {
+    padding-top: 80px;
+    display: none;
+}
+
+/* Adjust the sidebar active state */
+.sidebar.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the conversation list takes the remaining space */
+.conversation-list {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Dark mode adjustments */
+html.dark-mode .sidebar-new-chat-button {
+    background-color: #22c55e;
+}
+
+html.dark-mode .sidebar-new-chat-button:hover {
+    background-color: #16a34a;
+}
+
+.send-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #8e2da7);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
+  }
+  
+  .send-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(34, 197, 94, 0.4);
+    background: linear-gradient(135deg, #25d366, #1d20b9);
+  }
+  
+  .send-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(34, 197, 94, 0.4);
+  }
+  
+  .send-icon {
+    width: 40px;
+    height: 40px;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+  
+  .send-button:hover .send-icon {
+    transform: scale(1);
+  }
+  
+  .send-icon-path {
+    fill: white;
+    transform-origin: center;
+    transition: all 0.3s ease;
+  }
+  
+  /* Animation for the thought bubbles */
+  @keyframes bubble-float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+    100% { transform: translateY(0); }
+  }
+  
+  .send-button:hover .send-icon-path {
+    animation: bubble-float 1.5s infinite ease-in-out;
+  }
+  
+  /* Speech bubble dots animation */
+  .send-icon-path {
+    animation-delay: 0.2s;
+  }
+  
+  /* Disabled state */
+  .send-button:disabled {
+    background: linear-gradient(135deg, #a8a8a8, #d0d0d0);
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.7;
+  }
+  
+  .send-button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* Dark mode adjustments */
+  html.dark-mode .send-button {
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .send-button {
+      width: 42px;
+      height: 42px;
+    }
+    
+    .send-icon {
+      width: 70px;
+      height: 70px;
+    }
+  }
