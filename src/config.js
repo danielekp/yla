@@ -35,7 +35,7 @@ const config = {
         size: "4.7 GB",
     },
     {
-	    name: "QwQ",
+	    name: "QwQ:latest",
         num_ctx: 2048, // Context Size
         temperature: 0.7,
         top_k: 40,
