@@ -427,6 +427,30 @@ const AppInitializer = (function () {
     initializeApplication();
   }
 
+  window.addEventListener('beforeunload', () => {
+    try {
+      // Get conversations from localStorage
+      const savedConversations = localStorage.getItem('yla_conversations');
+      if (savedConversations) {
+        let conversations = JSON.parse(savedConversations);
+        
+        // Filter out empty conversations
+        const originalCount = conversations.length;
+        conversations = conversations.filter(convo => {
+          return convo.messages && convo.messages.length > 0;
+        });
+        
+        // Save back to localStorage if any were removed
+        if (conversations.length < originalCount) {
+          localStorage.setItem('yla_conversations', JSON.stringify(conversations));
+          console.log(`Removed ${originalCount - conversations.length} empty conversations`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up empty conversations:', error);
+    }
+  });
+
   // Public API
   return {
     checkConnection: () => ConnectionManager.checkConnection(true),
