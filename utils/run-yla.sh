@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the directory where your HTML file is located
-PROJECT_DIR="/home/sd23297/Documents/yla/"
+PROJECT_DIR="/home/Documents/yla/"
 
 # Start Ollama server in the background
 ollama serve &
@@ -19,6 +19,7 @@ PYTHON_SERVER_PID=$!
 sleep 2
 
 # Open Chromium and wait for it to close
+# Change this to your default browser
 chromium --app="http://localhost:$PORT/src/yla.html" 
 
 # Cleanup: Stop the servers when Chromium is closed

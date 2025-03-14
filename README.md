@@ -43,14 +43,18 @@ ollama serve
 ollama pull deepseek-r1:7b   # 7B parameter version
 ollama pull deepseek-r1:32b  # Medium-sized model
 ```
-> Models can also be downloaded from Yla interface, but you have to specify the name in the config file
+
+Check Ollama list of avaiable models [here](https://ollama.com/search).
+
+> Models can also be downloaded from Yla interface, but you have to specify the name in the config file.
 
 ### 3. Launch Application
 #### **Linux**:
 ```bash
 chmod +x scripts/run_yla.sh
-./scripts/run_yla.sh
+./utils/run_yla.sh
 ```
+> Default script uses Chromium. Please change it if you want to use a different browser!
 
 #### **Windows**:
 ```cmd
