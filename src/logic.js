@@ -800,6 +800,13 @@ const ChatApp = (function () {
       }, 3000);
     }
 
+    function hideThinkingPlaceholder(thinkDiv) {
+      // If think div exists and contains only the loading placeholder
+      if (thinkDiv && thinkDiv.querySelector('.think-loading')) {
+        thinkDiv.style.display = 'none';
+      }
+    }
+
     /**
      * Disables chat-related UI elements during loading
      */
@@ -1330,6 +1337,7 @@ const ChatApp = (function () {
       updateConversationList,
       toggleSidebar,
       toggleTheme,
+      hideThinkingPlaceholder,
     };
   })();
 
@@ -1483,6 +1491,7 @@ const ChatApp = (function () {
           UIManager.updateThinkingContent(uiElements.thinkDiv, thinkingContent);
         },
         onResponse: (responseContent) => {
+          UIManager.hideThinkingPlaceholder(uiElements.thinkDiv);
           UIManager.updateResponseContent(uiElements.responseDiv, responseContent);
         },
         onComplete: (completeContent) => {
