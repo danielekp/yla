@@ -1170,6 +1170,16 @@ const ChatApp = (function () {
      * @param {string} messageContent - The content of the message for resending
      */
     function addResendControls(messageDiv, messageContent) {
+      const currentModel = selectedModelSettings.get();
+
+      if (!currentModel) {
+        UIManager.showToast('Please select a model first', 'warning');
+        return;
+      }
+
+      const temperature = currentModel.temperature;
+      const top_k = currentModel.top_k;
+      const top_p = currentModel.top_p;
       const controls = document.createElement('div');
       controls.className = 'resend-controls';
       controls.innerHTML = `
@@ -1182,28 +1192,28 @@ const ChatApp = (function () {
                     <div class="param-group">
                         <div class="slider-header">
                             <span class="value-label">Temperature</span>
-                            <span class="value-display" data-for="temp">0.7</span>
+                            <span class="value-display" data-for="temp">${temperature}</span>
                         </div>
                         <input type="range" class="param-slider temp" 
-                               min="0" max="2" step="0.1" value="0.7">
+                               min="0" max="2" step="0.1" value="${temperature}">
                     </div>
 
                     <div class="param-group">
                         <div class="slider-header">
                             <span class="value-label">Top-K</span>
-                            <span class="value-display" data-for="topk">40</span>
+                            <span class="value-display" data-for="topk">${top_k}</span>
                         </div>
                         <input type="range" class="param-slider topk" 
-                               min="1" max="100" step="1" value="40">
+                               min="1" max="100" step="1" value="${top_k}">
                     </div>
 
                     <div class="param-group">
                         <div class="slider-header">
                             <span class="value-label">Top-P</span>
-                            <span class="value-display" data-for="topp">0.9</span>
+                            <span class="value-display" data-for="topp">${top_p}</span>
                         </div>
                         <input type="range" class="param-slider topp" 
-                               min="0" max="1" step="0.01" value="0.9">
+                               min="0" max="1" step="0.01" value="${top_p}">
                     </div>
 
                     <button class="resend-btn">

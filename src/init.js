@@ -58,7 +58,10 @@ const AppInitializer = (function () {
           this.style.height = 'auto';
           const newHeight = Math.min(this.scrollHeight, 150);
           this.style.height = `${newHeight}px`;
-          this.scrollTop = this.scrollHeight;
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth',
+          });
         }, 30);
 
         textarea.addEventListener('input', resizeTextarea);
