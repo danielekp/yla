@@ -58,12 +58,10 @@ chmod +x utils/run-yla.sh
 
 #### **MCP Mode (Linux)**:
 ```bash
-# Make the script executable (if not already)
-chmod +x start-yla-with-mcp.sh
-
-# Start YLA with MCP server
-./start-yla-with-mcp.sh
+chmod +x utils/run-yla.sh
+./utils/run-yla.sh --mcp
 ```
+> This starts YLA with MCP (Model Context Protocol) support enabled.
 
 #### **Windows**:
 ```cmd
@@ -71,6 +69,30 @@ ollama serve
 python -m http.server 8000
 # Open http://localhost:8000/src/yla.html on your browser
 ```
+
+### Startup Script Options
+
+The `utils/run-yla.sh` script supports the following options:
+
+```bash
+# Start YLA without MCP (default)
+./utils/run-yla.sh
+
+# Start YLA with MCP support
+./utils/run-yla.sh --mcp
+./utils/run-yla.sh -m
+
+# Show help
+./utils/run-yla.sh --help
+./utils/run-yla.sh -h
+```
+
+The script will:
+- Start Ollama server automatically
+- Start Python HTTP server on port 8000
+- Start MCP HTTP Bridge on port 3001 (if MCP is enabled)
+- Open YLA in your browser
+- Clean up all services when you close the browser
 
 ## MCP (Model Context Protocol) Integration
 
@@ -438,5 +460,3 @@ To run tests:
 - Verify model supports MCP tools
 - Check browser console for error messages
 - Use test files in `tests/` directory to isolate issues
-
-
