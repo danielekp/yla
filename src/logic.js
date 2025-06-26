@@ -1,6 +1,8 @@
 import config from './config.js';
 import { selectedModelSettings } from './modelSelector.js';
 import { MarkdownParser } from './parsers/markdown_parser.js';
+import mcpUI from './mcp-ui.js';
+import mcpHTTPClient from './mcp-http-client.js';
 
 /**
  * ChatApp - Main application module for local AI assistant
@@ -628,6 +630,12 @@ const ChatApp = (function () {
       // Format messages properly for the API
       const formattedMessages = formatMessagesForAPI(messages);
 
+      // Check if this is an MCP model and MCP is available
+      const isMCPModel = model.toLowerCase().includes('mcp');
+      const mcpAvailable = mcpUI && mcpUI.isInitialized;
+
+      // Note: Qwen2.5-MCP doesn't support OpenAI-style tool calls
+      // So we don't send tools to the API, but we'll parse the text response for commands
       const payload = {
         model: model,
         messages: formattedMessages,
@@ -637,12 +645,14 @@ const ChatApp = (function () {
           top_p: top_p,
         },
         stream: true,
+        // Don't send tools - the model doesn't support them
       };
 
       // Variables to accumulate content
       let currentSection = '';
       let thinkContent = '';
       let responseContent = '';
+      let toolCallsDetected = [];
 
       try {
         const response = await fetch(endpoint, {
@@ -683,6 +693,39 @@ const ChatApp = (function () {
                 if (!jsonStr) continue;
 
                 const data = JSON.parse(jsonStr);
+
+                // Handle tool calls from MCP models
+                if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.tool_calls) {
+                  const toolCalls = data.choices[0].delta.tool_calls;
+                  for (const toolCall of toolCalls) {
+                    if (toolCall.function && toolCall.function.name === 'execute_bash_command') {
+                      try {
+                        const args = JSON.parse(toolCall.function.arguments);
+                        toolCallsDetected.push({
+                          name: toolCall.function.name,
+                          arguments: args,
+                        });
+                        
+                        // Add tool call information to response
+                        const toolCallText = `\n\n**Tool Call:** ${toolCall.function.name}\n**Command:** \`${args.command}\`\n${args.description ? `**Description:** ${args.description}\n` : ''}`;
+                        responseContent += toolCallText;
+                        onResponse && onResponse(responseContent);
+                        
+                        // Log the tool call for debugging
+                        console.log('Tool call detected:', {
+                          name: toolCall.function.name,
+                          arguments: args,
+                          responseContent: responseContent
+                        });
+                      } catch (error) {
+                        console.error('Error parsing tool call:', error);
+                        responseContent += `\n\nError parsing tool call: ${error.message}`;
+                        onResponse && onResponse(responseContent);
+                      }
+                    }
+                  }
+                  continue;
+                }
 
                 if (
                   data.choices &&
@@ -731,7 +774,254 @@ const ChatApp = (function () {
         }
         assistantContent += responseContent;
 
-        onComplete && onComplete(assistantContent);
+        // If we detected tool calls and MCP is available, execute them
+        if (toolCallsDetected.length > 0 && mcpAvailable) {
+          console.log('Executing detected tool calls:', toolCallsDetected);
+          
+          for (const toolCall of toolCallsDetected) {
+            if (toolCall.name === 'execute_bash_command') {
+              try {
+                const result = await mcpUI.executeBashCommand(
+                  toolCall.arguments.command,
+                  toolCall.arguments.description || `Command requested by model: ${toolCall.arguments.command}`
+                );
+                
+                if (result.success) {
+                  assistantContent += `\n\n**Command Execution:** ${result.message}`;
+                  
+                  // If the command was executed successfully (not just queued), add the results to the chat
+                  if (result.message && result.message.includes('Command executed successfully!')) {
+                    // Extract the output from the message
+                    const outputMatch = result.message.match(/\*\*Output:\*\*\s*```\n([\s\S]*?)\n```/);
+                    if (outputMatch) {
+                      const output = outputMatch[1].trim();
+                      assistantContent += `\n\n**Command Output:**\n\`\`\`\n${output}\n\`\`\``;
+                    }
+                  }
+                } else {
+                  assistantContent += `\n\n**Command Error:** ${result.error}`;
+                }
+              } catch (error) {
+                console.error('Error executing tool call:', error);
+                assistantContent += `\n\n**Tool Execution Error:** ${error.message}`;
+              }
+            }
+          }
+        }
+
+        // For MCP models, parse the response to detect command execution requests
+        let finalContent = assistantContent;
+        if (isMCPModel && mcpAvailable) {
+          // Function to clean command by removing backticks and extra formatting
+          function cleanCommand(command) {
+            // Remove backticks from the beginning and end (both single and double)
+            let cleaned = command.replace(/^`+|`+$/g, '');
+            // Remove any markdown formatting
+            cleaned = cleaned.replace(/\*\*/g, '');
+            // Remove any HTML tags
+            cleaned = cleaned.replace(/<[^>]*>/g, '');
+            // Remove "bash" keyword at the beginning (case insensitive)
+            cleaned = cleaned.replace(/^bash\s+/i, '');
+            // Remove any extra whitespace and newlines
+            cleaned = cleaned.replace(/\s+/g, ' ').trim();
+            return cleaned;
+          }
+
+          // Look for patterns where the model wants to execute a command
+          const commandPatterns = [
+            // Pattern: "I'll execute this command: ``ls ~``" (double backticks) - FIXED - PRIORITY
+            /I'll execute this command:\s*``([\s\S]*?)``/i,
+            // Pattern: "I will execute this command: ``ls ~``" (double backticks) - FIXED - PRIORITY
+            /I will execute this command:\s*``([\s\S]*?)``/i,
+            // Pattern: "I'll execute this command to check...: ``bash df -h /``" (double backticks) - FIXED - PRIORITY
+            /I'll execute this command to[^:]*:\s*``([\s\S]*?)``/i,
+            // Pattern: "I will execute this command: `ls ~`" (single backticks)
+            /I will execute this command:\s*`([^`]+)`/i,
+            // Pattern: "I'll execute this command: `ls ~`" (single backticks)
+            /I'll execute this command:\s*`([^`]+)`/i,
+            // Pattern: "I'll execute this command to check...: `bash df -h /`" (single backticks)
+            /I'll execute this command to[^:]*:\s*`([^`]+)`/i,
+            // Pattern: "I'll execute this command: ls ~" (no backticks, but more specific)
+            /I'll execute this command:\s*([^\n`]+)/i,
+            // Pattern: "I will execute this command: ls ~" (no backticks, but more specific)
+            /I will execute this command:\s*([^\n`]+)/i,
+            // Pattern: "Let me run: ls ~"
+            /Let me run:\s*([^\n]+)/i,
+            // Pattern: "I'll run: ls ~"
+            /I'll run:\s*([^\n]+)/i,
+            // Pattern: "I'll execute: ls ~"
+            /I'll execute:\s*([^\n]+)/i,
+            // Pattern: "Let me execute: ls ~"
+            /Let me execute:\s*([^\n]+)/i,
+            // Pattern: "I'll use the command: ls ~"
+            /I'll use the command:\s*([^\n]+)/i,
+            // Pattern: "The command is: ls ~"
+            /The command is:\s*([^\n]+)/i,
+            // Pattern: "You can use: ls ~"
+            /You can use:\s*([^\n]+)/i,
+            // Pattern: "Use this command: ls ~"
+            /Use this command:\s*([^\n]+)/i,
+            // Pattern: "I'll execute this command to...: bash df -h /"
+            /I'll execute this command to[^:]*:\s*([^\n]+)/i,
+            // Pattern: "I'll execute: bash df -h /"
+            /I'll execute[^:]*:\s*([^\n]+)/i,
+            // Pattern: "I'll run: bash df -h /"
+            /I'll run[^:]*:\s*([^\n]+)/i,
+            // Pattern: "Let me run: bash df -h /"
+            /Let me run[^:]*:\s*([^\n]+)/i,
+            // Pattern: "The command to run is: bash df -h /"
+            /The command to run is:\s*([^\n]+)/i,
+            // Pattern: "Here's the command: bash df -h /"
+            /Here's the command:\s*([^\n]+)/i,
+            // Pattern: "Command: bash df -h /"
+            /Command:\s*([^\n]+)/i,
+            // Pattern: "I'll use: bash df -h /"
+            /I'll use[^:]*:\s*([^\n]+)/i,
+            // Pattern: "I'll execute this command: bash df -h /"
+            /I'll execute this command[^:]*:\s*([^\n]+)/i,
+            // Pattern: "I will execute this command: bash df -h /"
+            /I will execute this command[^:]*:\s*([^\n]+)/i,
+            // NEW PATTERNS for commands without explicit execution language
+            // Pattern: "sudo apt update && sudo apt install python3-numpy" (standalone command)
+            /^(sudo\s+[^\n]+)$/im,
+            // Pattern: "Command Detected: sudo apt update && sudo apt install python3-numpy"
+            /Command Detected:\s*([^\n]+)/i,
+            // Pattern: "The correct command for installing numpy: sudo apt update && sudo apt install python3-numpy"
+            /The correct command for[^:]*:\s*([^\n]+)/i,
+            // Pattern: "I'll provide the correct command: sudo apt update && sudo apt install python3-numpy"
+            /I'll provide the correct command:\s*([^\n]+)/i,
+            // Pattern: "Here's the correct command: sudo apt update && sudo apt install python3-numpy"
+            /Here's the correct command:\s*([^\n]+)/i,
+            // Pattern: "The command you need: sudo apt update && sudo apt install python3-numpy"
+            /The command you need:\s*([^\n]+)/i,
+            // Pattern: "Use this: sudo apt update && sudo apt install python3-numpy"
+            /Use this:\s*([^\n]+)/i,
+            // Pattern: "Try this: sudo apt update && sudo apt install python3-numpy"
+            /Try this:\s*([^\n]+)/i,
+            // Pattern: "Run this: sudo apt update && sudo apt install python3-numpy"
+            /Run this:\s*([^\n]+)/i,
+            // Pattern: "Execute this: sudo apt update && sudo apt install python3-numpy"
+            /Execute this:\s*([^\n]+)/i,
+            // Pattern: "Install it with: sudo apt update && sudo apt install python3-numpy"
+            /Install it with:\s*([^\n]+)/i,
+            // Pattern: "Install using: sudo apt update && sudo apt install python3-numpy"
+            /Install using:\s*([^\n]+)/i,
+            // Pattern: "Install via: sudo apt update && sudo apt install python3-numpy"
+            /Install via:\s*([^\n]+)/i,
+            // Pattern: "Install with: sudo apt update && sudo apt install python3-numpy"
+            /Install with:\s*([^\n]+)/i,
+            // Pattern: "Install by running: sudo apt update && sudo apt install python3-numpy"
+            /Install by running:\s*([^\n]+)/i,
+            // Pattern: "Install by executing: sudo apt update && sudo apt install python3-numpy"
+            /Install by executing:\s*([^\n]+)/i,
+            // Pattern: "Install by using: sudo apt update && sudo apt install python3-numpy"
+            /Install by using:\s*([^\n]+)/i,
+            // Pattern: "Install by typing: sudo apt update && sudo apt install python3-numpy"
+            /Install by typing:\s*([^\n]+)/i,
+            // Pattern: "Install by entering: sudo apt update && sudo apt install python3-numpy"
+            /Install by entering:\s*([^\n]+)/i,
+            // Pattern: "Install by issuing: sudo apt update && sudo apt install python3-numpy"
+            /Install by issuing:\s*([^\n]+)/i,
+            // Pattern: "Install by running the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by running the command:\s*([^\n]+)/i,
+            // Pattern: "Install by executing the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by executing the command:\s*([^\n]+)/i,
+            // Pattern: "Install by using the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by using the command:\s*([^\n]+)/i,
+            // Pattern: "Install by typing the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by typing the command:\s*([^\n]+)/i,
+            // Pattern: "Install by entering the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by entering the command:\s*([^\n]+)/i,
+            // Pattern: "Install by issuing the command: sudo apt update && sudo apt install python3-numpy"
+            /Install by issuing the command:\s*([^\n]+)/i,
+            // NEW PATTERNS for numbered lists and code blocks
+            // Pattern: "1. First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /^\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /^[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "I'll execute these commands one by one:\n\nFirst, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /I'll execute these commands one by one:\s*\n\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "I'll execute these commands:\n\n1. First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /I'll execute these commands:\s*\n\s*\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "Here are the commands:\n\n1. First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /Here are the commands:\s*\n\s*\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "The commands are:\n\n1. First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove"
+            /The commands are:\s*\n\s*\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            // Pattern: "I'll execute this command: ls ~" (fallback - moved to end)
+            /I'll execute (?:this command|the command|it):\s*([^\n]+)/i,
+            // Pattern: "I'll execute these commands one by one:\n\nFirst, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove \"^nvidia-|libsolana*\""
+            /I'll execute these commands one by one:\s*\n\s*[^:\n]*:\s*\n\s*(sudo\s+[^:\n]+)/im,
+          ];
+
+          for (const pattern of commandPatterns) {
+            const match = assistantContent.match(pattern);
+            if (match) {
+              const rawCommand = match[1].trim();
+              const command = cleanCommand(rawCommand);
+              
+              console.log('Command detection debug:', {
+                pattern: pattern.toString(),
+                rawCommand,
+                cleanedCommand: command,
+                fullMatch: match[0]
+              });
+              
+              // Validate the command
+              if (command && command.length >= 2) {
+                // Check for potentially dangerous commands
+                const dangerousPatterns = [
+                  /rm\s+-rf/i,
+                  /dd\s+if=/i,
+                  /mkfs/i,
+                  /fdisk/i,
+                  /:\(\)\{.*\};:/i, // Fork bomb
+                  /sudo\s+rm\s+-rf/i,
+                  /sudo\s+dd/i,
+                ];
+
+                let isDangerous = false;
+                for (const dangerousPattern of dangerousPatterns) {
+                  if (dangerousPattern.test(command)) {
+                    isDangerous = true;
+                    break;
+                  }
+                }
+
+                if (!isDangerous) {
+                  try {
+                    console.log('Detected command in model response:', command);
+                    const result = await mcpUI.executeBashCommand(command, `Command requested by model: ${command}`);
+                    if (result.success) {
+                      // Add a simple text message to the conversation history instead of HTML
+                      finalContent += `\n\n**Command Detected:** ${command}\n\n*Check the notification in the top-right corner to approve and execute.*`;
+                      
+                      // Show the modern HTML wrapper in the UI only (not in conversation history)
+                      // This will be handled by the MCP UI when the command is queued
+                      
+                      // If the command was executed successfully (not just queued), add the results to the chat
+                      if (result.message && result.message.includes('Command executed successfully!')) {
+                        // Extract the output from the message
+                        const outputMatch = result.message.match(/\*\*Output:\*\*\s*```\n([\s\S]*?)\n```/);
+                        if (outputMatch) {
+                          const output = outputMatch[1].trim();
+                          finalContent += `\n\n**Command Output:**\n\`\`\`\n${output}\n\`\`\``;
+                        }
+                      }
+                    } else {
+                      finalContent += `\n\n**Command Error:** ${result.error}`;
+                    }
+                  } catch (error) {
+                    console.error('Error executing command from model response:', error);
+                    finalContent += `\n\n**Command Execution Error:** ${error.message}`;
+                  }
+                }
+              }
+              break; // Only execute the first command found
+            }
+          }
+        }
+
+        onComplete && onComplete(finalContent);
       } catch (error) {
         console.error('API call error:', error);
         onError && onError(error);
@@ -801,9 +1091,22 @@ const ChatApp = (function () {
     }
 
     function hideThinkingPlaceholder(thinkDiv) {
-      // If think div exists and contains only the loading placeholder
-      if (thinkDiv && thinkDiv.querySelector('.think-loading')) {
-        thinkDiv.style.display = 'none';
+      // If think div exists and contains only the loading placeholder or is empty
+      if (thinkDiv) {
+        const hasLoading = thinkDiv.querySelector('.think-loading');
+        const hasOtherContent = thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+        
+        console.log('hideThinkingPlaceholder called - hasLoading:', !!hasLoading, 'hasOtherContent:', hasOtherContent);
+        
+        // Hide if there's only a loading indicator or no content
+        if (hasLoading && !hasOtherContent) {
+          console.log('Hiding thinking div - only loading indicator present');
+          thinkDiv.style.display = 'none';
+        } else if (hasOtherContent) {
+          // Make sure the thinking div is visible if it has content
+          console.log('Showing thinking div - has content');
+          thinkDiv.style.display = 'block';
+        }
       }
     }
 
@@ -918,7 +1221,13 @@ const ChatApp = (function () {
         existingLoader.remove();
       }
 
-      thinkDiv.innerHTML = content;
+      // If content is empty or just whitespace, hide the thinking section
+      if (!content || content.trim() === '') {
+        hideThinkingPlaceholder(thinkDiv);
+        return;
+      }
+
+      thinkDiv.innerHTML = MarkdownParser.parse(content);
       scrollToBottom();
     }
 
@@ -929,6 +1238,10 @@ const ChatApp = (function () {
      */
     function updateResponseContent(responseDiv, content) {
       responseDiv.innerHTML = MarkdownParser.parse(content);
+      
+      // Don't automatically hide the thinking placeholder - let it remain visible
+      // The thinking content should stay visible even when the response starts
+      
       scrollToBottom();
     }
 
@@ -1485,76 +1798,104 @@ const ChatApp = (function () {
      * @param {boolean} addToState - Whether to add the message to state
      */
     function processModelCall(message, temperature, top_k, top_p, addToState = true) {
-      // Set loading state
-      StateManager.setLoading(true);
+      if (StateManager.isAppLoading()) {
+        return; // Prevent multiple simultaneous requests
+      }
 
-      // Prepare UI for assistant response
+      // Set loading state and disable UI
+      StateManager.setLoading(true);
+      UIManager.disableUIElements();
+
+      // Prepare UI for assistant message (only once)
       const uiElements = UIManager.prepareAssistantMessageUI();
 
-      // Call model
+      // Set a timeout to hide the thinking placeholder if no thinking content is received
+      const thinkingTimeout = setTimeout(() => {
+        console.log('Thinking timeout triggered - checking if placeholder should be hidden');
+        const hasLoading = uiElements.thinkDiv.querySelector('.think-loading');
+        const hasOtherContent = uiElements.thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+        console.log('Timeout - hasLoading:', !!hasLoading, 'hasOtherContent:', hasOtherContent);
+        if (hasLoading && !hasOtherContent) {
+          console.log('Hiding thinking placeholder due to timeout');
+          UIManager.hideThinkingPlaceholder(uiElements.thinkDiv);
+        }
+      }, 2000); // Hide after 2 seconds if no thinking content
+
+      // Directly call the model, do not try to extract commands from user message
       ApiService.callModel({
         message,
         temperature,
         top_k,
         top_p,
-        onThinking: (thinkingContent) => {
-          UIManager.updateThinkingContent(uiElements.thinkDiv, thinkingContent);
+        onThinking: (thinkContent) => {
+          // Clear the timeout since we received thinking content
+          clearTimeout(thinkingTimeout);
+          
+          if (thinkContent && thinkContent.trim() !== '') {
+            UIManager.updateThinkingContent(uiElements.thinkDiv, thinkContent);
+          } else {
+            // Hide the thinking placeholder if no content
+            UIManager.hideThinkingPlaceholder(uiElements.thinkDiv);
+          }
         },
         onResponse: (responseContent) => {
-          UIManager.hideThinkingPlaceholder(uiElements.thinkDiv);
+          // Clear the timeout since we received a response
+          clearTimeout(thinkingTimeout);
+          
+          console.log('onResponse called - checking thinking placeholder');
+          
+          // Hide the thinking placeholder if it only contains the loading indicator
+          const hasLoading = uiElements.thinkDiv.querySelector('.think-loading');
+          const hasOtherContent = uiElements.thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+          console.log('Response - hasLoading:', !!hasLoading, 'hasOtherContent:', hasOtherContent);
+          if (hasLoading && !hasOtherContent) {
+            console.log('Hiding thinking placeholder due to response');
+            UIManager.hideThinkingPlaceholder(uiElements.thinkDiv);
+          }
+          
           UIManager.updateResponseContent(uiElements.responseDiv, responseContent);
         },
-        onComplete: (completeContent) => {
-          // Verify we have response content
+        onComplete: async (completeContent) => {
+          // Clear the timeout
+          clearTimeout(thinkingTimeout);
+          
           if (!completeContent) {
             console.error('Empty response content received from API');
             completeContent = "Sorry, I couldn't generate a proper response.";
           }
 
           if (addToState) {
-            // Double-check that we have a valid conversation
             if (!StateManager.getCurrentConversation()) {
               console.error('No active conversation to add message to');
               StateManager.createConversation();
             }
-
-            // Add the message to the state
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: completeContent,
             });
-
-            // Ensure state is persisted
             StateManager.persistState();
           }
-
-          // Update conversation list to reflect new messages
           updateConversationList();
-
-          // Reset loading state
+          // Don't hide the thinking placeholder - let it remain visible
           StateManager.setLoading(false);
+          UIManager.enableUIElements();
         },
         onError: (error) => {
+          // Clear the timeout
+          clearTimeout(thinkingTimeout);
+          
           console.error('Error calling model:', error);
-
-          // Remove the message container
           uiElements.container.remove();
-
-          // Show error message
           UIManager.renderErrorMessage('Sorry, I encountered an error. Please try again.');
-
           if (addToState) {
             StateManager.addMessageToCurrentConversation({
               role: 'assistant',
               content: 'Sorry, I encountered an error. Please try again.',
             });
-
-            // Ensure state is persisted after error
             StateManager.persistState();
           }
-
-          // Reset loading state
           StateManager.setLoading(false);
+          UIManager.enableUIElements();
         },
       });
     }
@@ -1659,6 +2000,15 @@ const ChatApp = (function () {
 
     // Initialize controller
     function init() {
+      // Initialize MCP UI
+      mcpUI.initialize().then((success) => {
+        if (success) {
+          console.log('MCP UI initialized successfully');
+        } else {
+          console.warn('MCP UI initialization failed');
+        }
+      });
+
       // Load conversations from localStorage
       const conversations = StateManager.getConversations();
 

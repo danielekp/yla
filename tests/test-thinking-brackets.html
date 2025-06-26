@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Thinking Brackets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .message-container {
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .message-think {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-style: italic;
+            padding: 0.75rem 1rem;
+            min-height: 45px;
+        }
+        .message-response {
+            background-color: #ffffff;
+            padding: 1rem;
+            color: #333;
+        }
+        .code-block-container {
+            margin: 1em 0;
+        }
+        .code-block-container pre {
+            color: black;
+            background-color: #f5f5f5;
+            padding: 1em;
+            border-radius: 4px;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .code-block-container code {
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Thinking Brackets Rendering</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Basic Thinking Brackets</h3>
+        <div id="test1" class="message-container">
+            <div class="message-think" id="think1"></div>
+            <div class="message-response" id="response1"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Thinking with Markdown</h3>
+        <div id="test2" class="message-container">
+            <div class="message-think" id="think2"></div>
+            <div class="message-response" id="response2"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Thinking with Code Blocks</h3>
+        <div id="test3" class="message-container">
+            <div class="message-think" id="think3"></div>
+            <div class="message-response" id="response3"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the MarkdownParser from the actual source
+        import('./src/parsers/markdown_parser.js').then(module => {
+            const MarkdownParser = module.MarkdownParser;
+            
+            // Test 1: Basic thinking brackets
+            const think1 = document.getElementById('think1');
+            const response1 = document.getElementById('response1');
+            
+            const thinkingContent1 = "Let me think about this... I need to analyze the problem step by step.";
+            const responseContent1 = "Based on my analysis, here's the answer.";
+            
+            think1.innerHTML = MarkdownParser.parse(thinkingContent1);
+            response1.innerHTML = MarkdownParser.parse(responseContent1);
+            
+            // Test 2: Thinking with markdown formatting
+            const think2 = document.getElementById('think2');
+            const response2 = document.getElementById('response2');
+            
+            const thinkingContent2 = "**Analysis:** I need to consider multiple factors:\n\n1. First factor\n2. Second factor\n3. Third factor\n\n*This is important to note.*";
+            const responseContent2 = "**Conclusion:** Based on the analysis above, here's my recommendation.";
+            
+            think2.innerHTML = MarkdownParser.parse(thinkingContent2);
+            response2.innerHTML = MarkdownParser.parse(responseContent2);
+            
+            // Test 3: Thinking with code blocks
+            const think3 = document.getElementById('think3');
+            const response3 = document.getElementById('response3');
+            
+            const thinkingContent3 = "Let me write some code to solve this:\n\n```python\ndef solve_problem():\n    return 'solution'\n```\n\nThis should work.";
+            const responseContent3 = "Here's the solution:\n\n```python\nresult = solve_problem()\nprint(result)\n```";
+            
+            think3.innerHTML = MarkdownParser.parse(thinkingContent3);
+            response3.innerHTML = MarkdownParser.parse(responseContent3);
+            
+            console.log('Tests completed successfully!');
+        }).catch(error => {
+            console.error('Error loading markdown parser:', error);
+            // Fallback: show raw content
+            document.getElementById('think1').textContent = "Let me think about this... I need to analyze the problem step by step.";
+            document.getElementById('response1').textContent = "Based on my analysis, here's the answer.";
+        });
+    </script>
+</body>
+</html> 

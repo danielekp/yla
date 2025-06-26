@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YLA MCP Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>YLA MCP Integration Test</h1>
+    
+    <div class="test-section">
+        <h3>MCP Server Status</h3>
+        <button class="test-button" onclick="checkMCPStatus()">Check MCP Status</button>
+        <div id="mcp-status" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Available Tools</h3>
+        <button class="test-button" onclick="getAvailableTools()">Get Available Tools</button>
+        <div id="available-tools" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Command Execution Test</h3>
+        <button class="test-button" onclick="testCommandExecution()">Test Command Execution</button>
+        <div id="command-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Pending Commands</h3>
+        <button class="test-button" onclick="getPendingCommands()">Get Pending Commands</button>
+        <div id="pending-commands" class="result"></div>
+    </div>
+
+    <script>
+        async function checkMCPStatus() {
+            const resultDiv = document.getElementById('mcp-status');
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function getAvailableTools() {
+            const resultDiv = document.getElementById('available-tools');
+            try {
+                const response = await fetch('http://localhost:3001/tools');
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testCommandExecution() {
+            const resultDiv = document.getElementById('command-result');
+            try {
+                const response = await fetch('http://localhost:3001/execute-command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        command: 'ls /home',
+                        description: 'Test command execution - list contents of /home directory'
+                    }),
+                });
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function getPendingCommands() {
+            const resultDiv = document.getElementById('pending-commands');
+            try {
+                const response = await fetch('http://localhost:3001/pending-commands');
+                const data = await response.json();
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // Auto-check MCP status on page load
+        window.onload = function() {
+            checkMCPStatus();
+        };
+
+        // Test MCP integration functionality
+        function testMCPIntegration() {
+            console.log('Testing MCP Integration...');
+            
+            // Test 1: Basic command detection
+            const testResponse1 = "I'll execute this command: `ls -la`";
+            console.log('Test 1 - Single backticks:', testResponse1);
+            
+            // Test 2: Double backticks command detection (the issue we're fixing)
+            const testResponse2 = "I'll execute this command: ``bash rm ~/Downloads/*.pdf ``";
+            console.log('Test 2 - Double backticks:', testResponse2);
+            
+            // Test 2.5: The specific issue from user query
+            const testResponse2_5 = "I'll execute this command: ``bash find /path/to/Documents -type f -name \"*.pdf\" ``";
+            console.log('Test 2.5 - User query issue:', testResponse2_5);
+            
+            // Test 3: Another double backticks pattern
+            const testResponse3 = "I will execute this command: ``sudo apt update``";
+            console.log('Test 3 - Double backticks with "will":', testResponse3);
+            
+            // Test 4: Command with "to" in the pattern
+            const testResponse4 = "I'll execute this command to check disk usage: ``bash df -h /``";
+            console.log('Test 4 - Double backticks with "to":', testResponse4);
+            
+            // Test 5: No backticks
+            const testResponse5 = "I'll execute this command: rm ~/Downloads/*.pdf";
+            console.log('Test 5 - No backticks:', testResponse5);
+            
+            // Test the regex patterns
+            const patterns = [
+                /I'll execute this command:\s*`([^`]+)`/i,
+                /I'll execute this command:\s*``([\s\S]*?)``/i,
+                /I will execute this command:\s*``([\s\S]*?)``/i,
+                /I'll execute this command to[^:]*:\s*``([\s\S]*?)``/i,
+                /I'll execute this command:\s*([^\n]+)/i
+            ];
+            
+            const testCases = [testResponse1, testResponse2, testResponse2_5, testResponse3, testResponse4, testResponse5];
+            
+            testCases.forEach((testCase, index) => {
+                console.log(`\n--- Testing Case ${index + 1} ---`);
+                console.log('Input:', testCase);
+                
+                let found = false;
+                for (let i = 0; i < patterns.length; i++) {
+                    const match = testCase.match(patterns[i]);
+                    if (match) {
+                        console.log(`✓ Pattern ${i + 1} matched:`, match[1]);
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    console.log('✗ No pattern matched');
+                }
+            });
+        }
+        
+        // Run the test when page loads
+        window.addEventListener('load', testMCPIntegration);
+    </script>
+</body>
+</html> 

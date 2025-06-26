@@ -1,0 +1,34 @@
+{
+  "name": "yla-terminal-mcp",
+  "version": "1.0.0",
+  "description": "YLA - Your Local AI Assistant with MCP integration",
+  "type": "module",
+  "main": "src/init.js",
+  "scripts": {
+    "start": "node src/init.js",
+    "test-mcp": "node tests/test-mcp.js",
+    "test-runner": "./tests/run-tests.sh",
+    "dev": "python3 -m http.server 8000",
+    "mcp-bridge": "node src/mcp-http-bridge.js",
+    "start-mcp": "node start-mcp.js",
+    "test": "echo 'Open tests/*.html files in your browser to run tests'"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "chatbot",
+    "mcp",
+    "ollama",
+    "local"
+  ],
+  "author": "YLA Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "zod": "^3.23.8"
+  }
+}

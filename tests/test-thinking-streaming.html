@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Thinking Streaming</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .message-container {
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .message-think {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-style: italic;
+            padding: 0.75rem 1rem;
+            min-height: 45px;
+        }
+        .message-response {
+            background-color: #ffffff;
+            padding: 1rem;
+            color: #333;
+        }
+        .think-loading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+        }
+        .loading-icon {
+            width: 24px;
+            height: 24px;
+            animation: rotate 2s linear infinite;
+        }
+        .loading-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-style: italic;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Thinking Streaming</h1>
+    
+    <div class="test-section">
+        <h3>Simulate Thinking Content</h3>
+        <button class="test-button" onclick="simulateThinking()">Start Thinking Simulation</button>
+        <button class="test-button" onclick="simulateNoThinking()">Simulate No Thinking (Hide Loading)</button>
+        <button class="test-button" onclick="testHideImmediately()">Test Hide Immediately</button>
+        <button class="test-button" onclick="clearTest()">Clear Test</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="test-container"></div>
+    </div>
+
+    <script type="module">
+        // Import the MarkdownParser from the actual source
+        import('./src/parsers/markdown_parser.js').then(module => {
+            const MarkdownParser = module.MarkdownParser;
+            
+            // Make MarkdownParser available globally for the test
+            window.MarkdownParser = MarkdownParser;
+            
+            console.log('MarkdownParser loaded successfully');
+        }).catch(error => {
+            console.error('Error loading markdown parser:', error);
+        });
+
+        function createMessageContainer() {
+            const container = document.createElement('div');
+            container.classList.add('message-container', 'assistant-message');
+
+            // Create think div first
+            const thinkDiv = document.createElement('div');
+            thinkDiv.classList.add('message-think');
+
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.classList.add('think-loading');
+
+            const iconImg = document.createElement('img');
+            iconImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJWNk0xMiAxOFYyMk0yIDJIMTBNMTQgMkgyMk0yIDIySDEwTTE0IDIySDIyTTIgMTRIMTBNMjIgMTRIMjJNMiAxMEgxME0yMiAxMEgyMk0yIDZIMTBNMjIgNkgyMk0yIDE4SDEwTTIyIDE4SDIyIiBzdHJva2U9IiM2QjcyODAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
+            iconImg.alt = 'Assistant thinking';
+            iconImg.classList.add('loading-icon');
+            loadingIndicator.appendChild(iconImg);
+
+            const loadingText = document.createElement('span');
+            loadingText.textContent = 'Thinking...';
+            loadingText.classList.add('loading-text');
+            loadingIndicator.appendChild(loadingText);
+
+            thinkDiv.appendChild(loadingIndicator);
+            container.appendChild(thinkDiv);
+
+            // Create response div
+            const responseDiv = document.createElement('div');
+            responseDiv.classList.add('message-response');
+            container.appendChild(responseDiv);
+
+            return {
+                container: container,
+                thinkDiv: thinkDiv,
+                responseDiv: responseDiv,
+            };
+        }
+
+        function updateThinkingContent(thinkDiv, content) {
+            const existingLoader = thinkDiv.querySelector('.think-loading');
+            if (existingLoader) {
+                existingLoader.remove();
+            }
+
+            // If content is empty or just whitespace, hide the thinking section
+            if (!content || content.trim() === '') {
+                thinkDiv.style.display = 'none';
+                return;
+            }
+
+            thinkDiv.innerHTML = window.MarkdownParser.parse(content);
+            thinkDiv.style.display = 'block';
+        }
+
+        function updateResponseContent(responseDiv, content) {
+            responseDiv.innerHTML = window.MarkdownParser.parse(content);
+        }
+
+        function simulateThinking() {
+            const testContainer = document.getElementById('test-container');
+            testContainer.innerHTML = '';
+            
+            const uiElements = createMessageContainer();
+            testContainer.appendChild(uiElements.container);
+
+            // Simulate thinking content with markdown
+            const thinkingSteps = [
+                "Let me think about this...",
+                "**Analysis:** I need to consider multiple factors:\n\n1. First factor\n2. Second factor",
+                "**Analysis:** I need to consider multiple factors:\n\n1. First factor\n2. Second factor\n3. Third factor\n\n*This is important to note.*",
+                "**Analysis:** I need to consider multiple factors:\n\n1. First factor\n2. Second factor\n3. Third factor\n\n*This is important to note.*\n\nLet me write some code:\n\n```python\ndef solve_problem():\n    return 'solution'\n```"
+            ];
+
+            let stepIndex = 0;
+            const thinkingInterval = setInterval(() => {
+                if (stepIndex < thinkingSteps.length) {
+                    updateThinkingContent(uiElements.thinkDiv, thinkingSteps[stepIndex]);
+                    stepIndex++;
+                } else {
+                    clearInterval(thinkingInterval);
+                    
+                    // Simulate response
+                    setTimeout(() => {
+                        updateResponseContent(uiElements.responseDiv, "**Conclusion:** Based on my analysis above, here's my recommendation:\n\n```python\nresult = solve_problem()\nprint(result)\n```");
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function simulateNoThinking() {
+            const testContainer = document.getElementById('test-container');
+            testContainer.innerHTML = '';
+            
+            const uiElements = createMessageContainer();
+            testContainer.appendChild(uiElements.container);
+
+            // Set a timeout to hide the thinking placeholder if no thinking content is received
+            const thinkingTimeout = setTimeout(() => {
+                const hasLoading = uiElements.thinkDiv.querySelector('.think-loading');
+                const hasOtherContent = uiElements.thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+                if (hasLoading && !hasOtherContent) {
+                    uiElements.thinkDiv.style.display = 'none';
+                }
+            }, 3000); // Hide after 3 seconds if no thinking content
+
+            // Simulate response without thinking content
+            setTimeout(() => {
+                clearTimeout(thinkingTimeout);
+                
+                // Hide the thinking placeholder if it only contains the loading indicator
+                const hasLoading = uiElements.thinkDiv.querySelector('.think-loading');
+                const hasOtherContent = uiElements.thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+                if (hasLoading && !hasOtherContent) {
+                    uiElements.thinkDiv.style.display = 'none';
+                }
+                
+                updateResponseContent(uiElements.responseDiv, "**Response:** Here's my answer without any thinking content.");
+            }, 2000);
+        }
+
+        function testHideImmediately() {
+            const testContainer = document.getElementById('test-container');
+            testContainer.innerHTML = '';
+            
+            const uiElements = createMessageContainer();
+            testContainer.appendChild(uiElements.container);
+
+            // Immediately try to hide the thinking placeholder
+            setTimeout(() => {
+                console.log('Testing immediate hide...');
+                const hasLoading = uiElements.thinkDiv.querySelector('.think-loading');
+                const hasOtherContent = uiElements.thinkDiv.innerHTML.trim() !== '' && !hasLoading;
+                console.log('Immediate test - hasLoading:', !!hasLoading, 'hasOtherContent:', hasOtherContent);
+                
+                if (hasLoading && !hasOtherContent) {
+                    console.log('Hiding thinking placeholder immediately');
+                    uiElements.thinkDiv.style.display = 'none';
+                }
+            }, 100);
+        }
+
+        function clearTest() {
+            document.getElementById('test-container').innerHTML = '';
+        }
+
+        // Make functions available globally
+        window.simulateThinking = simulateThinking;
+        window.simulateNoThinking = simulateNoThinking;
+        window.testHideImmediately = testHideImmediately;
+        window.clearTest = clearTest;
+    </script>
+</body>
+</html> 

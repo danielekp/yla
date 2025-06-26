@@ -72,6 +72,13 @@ const AppInitializer = (function () {
       this.registerEvent('newChatButton', 'click', startNewConversation);
       this.registerEvent('toggleSidebarButton', 'click', toggleSidebar);
       this.registerEvent('themeToggleButton', 'click', toggleTheme);
+      this.registerEvent('mcpCommandsButton', 'click', () => {
+        // Import and use mcpUI dynamically to avoid circular dependencies
+        import('./mcp-ui.js').then(module => {
+          const mcpUI = module.default;
+          mcpUI.showPendingCommands();
+        });
+      });
 
       // Connection status retry on click
       this.registerEvent('connectionStatus', 'click', () =>

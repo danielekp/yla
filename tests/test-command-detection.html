@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Command Detection Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Command Detection Fix</h1>
+    <p>This test verifies that the command detection regex patterns properly handle double backticks.</p>
+
+    <div class="test-section">
+        <h2>Test Cases</h2>
+        <button onclick="runTests()">Run Tests</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function runTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            // Test cases that were failing before the fix
+            const testCases = [
+                {
+                    name: "Double backticks with bash command (USER ISSUE)",
+                    text: "I'll execute this command: ``bash find /path/to/Documents -type f -name \"*.pdf\" ``",
+                    expected: "find /path/to/Documents -type f -name \"*.pdf\" "
+                },
+                {
+                    name: "Double backticks with complex command",
+                    text: "I will execute this command: ``sudo apt update && sudo apt install python3-numpy``",
+                    expected: "sudo apt update && sudo apt install python3-numpy"
+                },
+                {
+                    name: "Double backticks with single backtick inside",
+                    text: "I'll execute this command: ``echo 'Hello World'``",
+                    expected: "echo 'Hello World'"
+                },
+                {
+                    name: "Numbered list with command (NEW USER ISSUE)",
+                    text: "I'll execute these commands one by one:\n\nFirst, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove \"^nvidia-|libsolana*\"",
+                    expected: "sudo apt-get --purge remove \"^nvidia-|libsolana*\""
+                },
+                {
+                    name: "Numbered list with multiple commands",
+                    text: "I'll execute these commands:\n\n1. First, let's uninstall the NVIDIA drivers:\n\nsudo apt-get --purge remove \"^nvidia-|libsolana*\"\n\n2. Next, clean up packages:\n\nsudo apt-get autoremove || true",
+                    expected: "sudo apt-get --purge remove \"^nvidia-|libsolana*\""
+                },
+                {
+                    name: "Simple command with sudo",
+                    text: "I'll execute this command: sudo apt update",
+                    expected: "sudo apt update"
+                },
+                {
+                    name: "Single backticks (should still work)",
+                    text: "I'll execute this command: `ls -la`",
+                    expected: "ls -la"
+                },
+                {
+                    name: "No backticks (should still work)",
+                    text: "I'll execute this command: find . -name '*.txt'",
+                    expected: "find . -name '*.txt'"
+                },
+                {
+                    name: "Bash keyword should be removed",
+                    text: "I'll execute this command: ``bash ls -la``",
+                    expected: "ls -la"
+                }
+            ];
+
+            // Test the regex patterns
+            const patterns = [
+                /I'll execute this command:\s*`([^`]+)`/i,
+                /I'll execute this command:\s*``([\s\S]*?)``/i,  // FIXED: Use [\s\S]*? instead of [^`]+
+                /I will execute this command:\s*``([\s\S]*?)``/i,  // FIXED: Use [\s\S]*? instead of [^`]+
+                /I'll execute this command to[^:]*:\s*``([\s\S]*?)``/i,  // FIXED: Use [\s\S]*? instead of [^`]+
+                /I'll execute this command:\s*([^\n]+)/i,
+                // NEW PATTERNS for numbered lists
+                /I'll execute these commands one by one:\s*\n\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+                /I'll execute these commands:\n\s*\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+                /^\d+\.\s*[^:\n]*:\s*\n\s*(sudo\s+[^\n]+)/im,
+            ];
+
+            function cleanCommand(command) {
+                // Remove backticks from the beginning and end (both single and double)
+                let cleaned = command.replace(/^`+|`+$/g, '');
+                // Remove any markdown formatting
+                cleaned = cleaned.replace(/\*\*/g, '');
+                // Remove any HTML tags
+                cleaned = cleaned.replace(/<[^>]*>/g, '');
+                // Remove "bash" keyword at the beginning (case insensitive)
+                cleaned = cleaned.replace(/^bash\s+/i, '');
+                // Remove any extra whitespace and newlines
+                cleaned = cleaned.replace(/\s+/g, ' ').trim();
+                return cleaned;
+            }
+
+            testCases.forEach((testCase, index) => {
+                let matched = false;
+                let extractedCommand = null;
+                let matchedPatternIndex = -1;
+                let rawCommand = null;
+
+                for (let i = 0; i < patterns.length; i++) {
+                    const pattern = patterns[i];
+                    const match = testCase.text.match(pattern);
+                    if (match) {
+                        rawCommand = match[1].trim();
+                        extractedCommand = cleanCommand(rawCommand);
+                        matchedPatternIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `result ${matched ? 'success' : 'error'}`;
+                
+                if (matched) {
+                    const isCorrect = extractedCommand === testCase.expected;
+                    resultDiv.className = `result ${isCorrect ? 'success' : 'error'}`;
+                    
+                    resultDiv.innerHTML = `
+                        <strong>${testCase.name}</strong><br>
+                        <strong>Status:</strong> ${isCorrect ? 'PASS' : 'FAIL'}<br>
+                        <strong>Input:</strong> ${testCase.text}<br>
+                        <strong>Expected:</strong> "${testCase.expected}"<br>
+                        <strong>Raw Extracted:</strong> "${rawCommand}"<br>
+                        <strong>Cleaned:</strong> "${extractedCommand}"<br>
+                        <strong>Pattern #:</strong> ${matchedPatternIndex + 1}<br>
+                        <strong>Match:</strong> ${isCorrect ? '✅' : '❌'}
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <strong>${testCase.name}</strong><br>
+                        <strong>Status:</strong> FAIL<br>
+                        <strong>Input:</strong> ${testCase.text}<br>
+                        <strong>Expected:</strong> "${testCase.expected}"<br>
+                        <strong>Extracted:</strong> No match found<br>
+                        <strong>Match:</strong> ❌
+                    `;
+                }
+
+                resultsDiv.appendChild(resultDiv);
+            });
+        }
+    </script>
+</body>
+</html> 

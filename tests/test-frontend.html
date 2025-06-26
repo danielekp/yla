@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>MCP Frontend Integration Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Initialize MCP Client</h3>
+        <button onclick="testInitialize()">Initialize</button>
+        <div id="init-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Get Available Tools</h3>
+        <button onclick="testGetTools()">Get Tools</button>
+        <div id="tools-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Execute Command</h3>
+        <input type="text" id="command-input" placeholder="Enter command (e.g., echo 'Hello')" style="width: 300px; padding: 5px;">
+        <button onclick="testExecuteCommand()">Execute</button>
+        <div id="execute-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Get Pending Commands</h3>
+        <button onclick="testGetPending()">Get Pending</button>
+        <div id="pending-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Approve Command</h3>
+        <input type="text" id="approve-input" placeholder="Enter command ID" style="width: 200px; padding: 5px;">
+        <button onclick="testApproveCommand()">Approve</button>
+        <div id="approve-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        import mcpHTTPClient from './src/mcp-http-client.js';
+
+        window.testInitialize = async function() {
+            const resultDiv = document.getElementById('init-result');
+            resultDiv.textContent = 'Initializing...';
+            resultDiv.className = 'result';
+            
+            try {
+                const success = await mcpHTTPClient.initialize();
+                if (success) {
+                    resultDiv.textContent = '✅ MCP HTTP Client initialized successfully!';
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = '❌ Failed to initialize MCP HTTP Client';
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testGetTools = async function() {
+            const resultDiv = document.getElementById('tools-result');
+            resultDiv.textContent = 'Getting tools...';
+            resultDiv.className = 'result';
+            
+            try {
+                const tools = await mcpHTTPClient.getAvailableTools();
+                resultDiv.textContent = `✅ Available tools:\n${JSON.stringify(tools, null, 2)}`;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testExecuteCommand = async function() {
+            const resultDiv = document.getElementById('execute-result');
+            const command = document.getElementById('command-input').value;
+            
+            if (!command) {
+                resultDiv.textContent = '❌ Please enter a command';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = 'Executing command...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await mcpHTTPClient.executeBashCommand(command, 'Test command from frontend');
+                if (result.success) {
+                    resultDiv.textContent = `✅ Command created:\n${result.message}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Error: ${result.error}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testGetPending = async function() {
+            const resultDiv = document.getElementById('pending-result');
+            resultDiv.textContent = 'Getting pending commands...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await mcpHTTPClient.getPendingCommands();
+                if (result.success) {
+                    resultDiv.textContent = `✅ Pending commands:\n${JSON.stringify(result.commands, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Error: ${result.error}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+
+        window.testApproveCommand = async function() {
+            const resultDiv = document.getElementById('approve-result');
+            const commandId = document.getElementById('approve-input').value;
+            
+            if (!commandId) {
+                resultDiv.textContent = '❌ Please enter a command ID';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = 'Approving command...';
+            resultDiv.className = 'result';
+            
+            try {
+                const result = await mcpHTTPClient.approveCommand(commandId);
+                if (result.success) {
+                    resultDiv.textContent = `✅ Command approved:\n${result.message}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Error: ${result.error}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        };
+    </script>
+</body>
+</html> 

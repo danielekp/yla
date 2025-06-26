@@ -701,12 +701,35 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
 }
 
 .theme-toggle-icon {
-    width: 44px;
-    height: 44px;
+    width: 30px;
+    height: 30px;
+    filter: var(--icon-filter);
+}
+
+.mcp-commands-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    color: var(--text-secondary);
+}
+
+.mcp-commands-button:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.mcp-commands-button svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* Model selector */
