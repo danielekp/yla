@@ -51,8 +51,8 @@ Check Ollama list of avaiable models [here](https://ollama.com/search).
 ### 3. Launch Application
 #### **Linux**:
 ```bash
-chmod +x scripts/run_yla.sh
-./utils/run_yla.sh
+chmod +x utils/run-yla.sh
+./utils/run-yla.sh
 ```
 > Default script uses Chromium. Please change it if you want to use a different browser!
 
