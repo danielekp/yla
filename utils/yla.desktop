@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=Yla
 Comment=Launch the AI Assistant Yla
-Exec=/home/Documents/yla/utils/run-yla.sh
-Icon=/home/yla/src/media/assistant.png
+Exec=/home/danielaush/Documents/yla/utils/run-yla.sh
+Icon=/home/danielaush/Documents/yla/src/media/assistant.png
 Terminal=false
 Type=Application
 Categories=Utility;

@@ -6,10 +6,10 @@ docker compose up -d --build
 
 To access the application, open a browser and go to [localhost:8000/src/yla.html](localhost:8000/src/yla.html)
 
-**NOTE**: in case you run the app on a remote server and you have ssh access to the server, you can create a secure connection to the app by running:
+**NOTE**: in case you run the app on a remote server and you have ssh access to the server, you can create a secure connection to the app by forwarding both the web server port and the Ollama port (the browser talks to Ollama directly at `localhost:11434`):
 
 ```bash
-ssh -L 8000:localhost:8000 user@server
+ssh -L 8000:localhost:8000 -L 11434:localhost:11434 user@server
 ```
 
 ---
