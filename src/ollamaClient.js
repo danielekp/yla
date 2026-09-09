@@ -198,8 +198,8 @@ function parseParameters(text) {
 }
 
 /**
- * Returns capabilities and Modelfile parameters for a model.
- * @returns {Promise<{capabilities: string[], parameters: Object, family: string}>}
+ * Returns capabilities, Modelfile parameters and system prompt for a model.
+ * @returns {Promise<{capabilities: string[], parameters: Object, system: string, family: string, parentModel: string}>}
  */
 export async function showModel(name, { timeout = 8000 } = {}) {
   const response = await fetchWithTimeout(
@@ -216,6 +216,7 @@ export async function showModel(name, { timeout = 8000 } = {}) {
   return {
     capabilities: Array.isArray(data.capabilities) ? data.capabilities : [],
     parameters: parseParameters(data.parameters),
+    system: typeof data.system === 'string' ? data.system : '',
     family: data.details?.family || '',
     parentModel: data.details?.parent_model || '',
   };
@@ -374,4 +375,57 @@ export async function pullModel(name, { signal, onProgress } = {}) {
       });
     if (status === 'success') return;
   }
+}
+
+/**
+ * Creates a model on the server from an existing base model, the equivalent of
+ * `ollama create` with a Modelfile made of FROM, SYSTEM and PARAMETER lines.
+ * Progress statuses are streamed like a pull ("creating new layer", "success").
+ * @param {Object} spec
+ * @param {string} spec.name        Name of the model to create (tag optional)
+ * @param {string} spec.from        Installed model to build on
+ * @param {string} [spec.system]    System prompt baked into the model
+ * @param {Object} [spec.parameters] Modelfile parameters (num_ctx, temperature, top_k, top_p, ...)
+ * @param {Object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @param {Function} [opts.onProgress] - ({status, done})
+ */
+export async function createModel({ name, from, system, parameters }, { signal, onProgress } = {}) {
+  const body = { model: name, from, stream: true };
+  if (typeof system === 'string' && system.trim()) body.system = system;
+  if (parameters && Object.keys(parameters).length) body.parameters = parameters;
+
+  const response = await fetch(url('/api/create'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!response.ok) await throwForStatus(response);
+
+  for await (const chunk of readNdjson(response.body)) {
+    if (chunk.error) throw new ApiError(chunk.error);
+    const status = chunk.status || '';
+    const done = status === 'success';
+    onProgress && onProgress({ status, done });
+    if (done) return;
+  }
+  throw new ApiError('Ollama closed the connection before the model was created.');
+}
+
+/**
+ * Deletes a model from the server (`ollama rm`).
+ * @param {string} name
+ */
+export async function deleteModel(name, { timeout = 15000 } = {}) {
+  const response = await fetchWithTimeout(
+    url('/api/delete'),
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: name }),
+    },
+    timeout
+  );
+  if (!response.ok) await throwForStatus(response);
 }

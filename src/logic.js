@@ -1407,6 +1407,8 @@ const ChatApp = (function () {
 
     function init() {
       document.addEventListener('yla:model-selected', (e) => onModelSelected(e.detail));
+      // The active model was deleted from Ollama: the chat needs a new one.
+      document.addEventListener('yla:model-removed', () => UIManager.setModelPill(null));
       window.addEventListener('beforeunload', () => StateManager.pruneEmpty());
       const model = selectedModelSettings.get();
       if (model) onModelSelected(model);

@@ -50,8 +50,9 @@ else
     fi
 fi
 
-# Serve the project files (the UI is a static page).
-python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
+# Serve the project files (the UI is a static page) and proxy the Ollama
+# model library for the "Create model" form (see utils/serve.py).
+python3 "$PROJECT_DIR/utils/serve.py" "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
 PYTHON_SERVER_PID=$!
 sleep 1
 

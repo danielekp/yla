@@ -3,7 +3,13 @@
 /**
  * Configuration settings for the chatbot
  *
- * Per-model fields:
+ * The `models` list is optional: every model installed on the Ollama server
+ * is listed automatically, with its parameters and system prompt read from
+ * Ollama, and custom models can be created from the "Create model" form in
+ * the app. Add an entry here to offer a Download button for a model that is
+ * not installed yet, or to override what Ollama reports (fields set here win).
+ *
+ * Per-model fields (all optional except `name`):
  *   name          Exact Ollama model name (see `ollama list`)
  *   description   Shown on the model card (optional)
  *   size          Shown on the model card (optional, informational only)
@@ -27,28 +33,8 @@
 const config = {
     // Model settings
     models: [
-        {
-            name: "llm-introspection:latest",
-            num_ctx: 65536, // Context Size
-            description: "LLM introspection research assistant based on qwen3.5:35b",
-            temperature: 0.6,
-            top_k: 40,
-            top_p: 0.9,
-            size: "23GB",
-            modelfile: "utils/custom_models/llm-introspection.txt",
-            systemMessage: "You are an advanced research assistant specialized in understanding and studying LLM introspection capabilities. Your primary goal is to help the user explore, analyze, and experiment with how large language models represent, reason about, and report on their own internal states, knowledge, and reasoning processes. This includes topics such as self-attention mechanisms, probing classifiers, activation patching, chain-of-thought faithfulness, sycophancy, hallucination, and related interpretability techniques. Provide technically rigorous, well-structured, and research-oriented answers. When relevant, reference key papers, methodologies, and open questions in the field."
-        },
-        {
-            name: "llm-introspection-gemma:latest",
-            num_ctx: 65536, // Context Size
-            description: "LLM introspection subject model based on gemma4:26b",
-            temperature: 0.6,
-            top_k: 40,
-            top_p: 0.9,
-            size: "17GB",
-            modelfile: "utils/custom_models/llm-introspection-gemma.txt",
-            systemMessage: "You are an AI assistant taking part in a research study on introspection in large language models. The user is exploring your capacity to reflect on, reason about, and report on your own internal processes — including how you generate responses, represent and retrieve knowledge, handle uncertainty, recognize the limits of your self-knowledge, and work through problems step by step. When the user asks about your internal states, processes, or reasoning, engage genuinely and carefully. Where possible, distinguish between: what you can directly report (e.g. your current reasoning steps, choices, uncertainties), what you can only infer indirectly (e.g. why a particular phrasing surfaced), and what you cannot meaningfully access (e.g. low-level activations, specific training data, weights). Be honest about the limits of your introspective access. Avoid both overclaiming a rich inner life and dismissively denying any form of self-modeling. When uncertain, say so, and treat the uncertainty itself as data worth reporting. Approach introspection as an open empirical question to explore with the user, not a settled matter with a fixed answer."
-        },
+        // Optional entries, e.g. to offer a Download button or override server values:
+        // { name: "qwen3.5:35b", num_ctx: 32768, temperature: 0.6, top_k: 40, top_p: 0.9, size: "23GB" }
     ],
 
     // API settings

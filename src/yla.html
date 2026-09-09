@@ -44,8 +44,66 @@
                 </svg>
                 <span>Refresh</span>
             </button>
+            <button class="model-selector-refresh" id="createModelButton" type="button" title="Build a custom model on top of an installed one" aria-expanded="false" aria-controls="createModelPanel">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                <span>Create model</span>
+            </button>
         </div>
         <p class="model-selector-hint" id="modelSelectorHint">Choose the model you want to chat with.</p>
+
+        <form class="create-model-panel hidden" id="createModelPanel" aria-label="Create a custom model" novalidate>
+            <div class="create-model-head">
+                <h3>Create a custom model</h3>
+                <p>Saved in Ollama, exactly like <code>ollama create</code> with a Modelfile. The base model is downloaded first when it is not installed.</p>
+            </div>
+            <div class="create-model-grid">
+                <label class="create-field">
+                    <span>Name</span>
+                    <input type="text" id="createModelName" name="name" autocomplete="off" spellcheck="false" placeholder="my-assistant" required>
+                </label>
+                <div class="create-field create-field-wide base-model-field">
+                    <label for="createModelFrom">Base model</label>
+                    <input type="text" id="createModelFrom" name="from" autocomplete="off" spellcheck="false" placeholder="Type to filter, or a full name like qwen3.5:35b" required>
+                    <select id="baseModelList" size="7" aria-label="Installed models and Ollama library"></select>
+                    <div class="base-model-variant hidden" id="baseModelVariantRow">
+                        <label for="baseModelVariant">Variant</label>
+                        <select id="baseModelVariant"></select>
+                    </div>
+                    <small id="baseModelInfo">Installed models and the <a href="https://ollama.com/library" target="_blank" rel="noopener">Ollama library</a> are listed below.</small>
+                </div>
+                <label class="create-field create-field-wide">
+                    <span>System prompt</span>
+                    <textarea id="createModelSystem" name="system" rows="5" placeholder="You are a helpful assistant…"></textarea>
+                </label>
+                <label class="create-field">
+                    <span>Context window (tokens)</span>
+                    <input type="number" id="createModelCtx" name="num_ctx" min="512" step="512" value="8192" inputmode="numeric">
+                </label>
+                <label class="create-field">
+                    <span>Temperature</span>
+                    <input type="number" id="createModelTemp" name="temperature" min="0" max="2" step="0.05" value="0.7">
+                </label>
+                <label class="create-field">
+                    <span>Top K</span>
+                    <input type="number" id="createModelTopK" name="top_k" min="1" max="200" step="1" value="40">
+                </label>
+                <label class="create-field">
+                    <span>Top P</span>
+                    <input type="number" id="createModelTopP" name="top_p" min="0" max="1" step="0.01" value="0.9">
+                </label>
+            </div>
+            <div class="download-progress" id="createModelProgress"><div class="progress-bar"></div></div>
+            <div class="create-model-footer">
+                <div class="download-status" id="createModelStatus" role="status" aria-live="polite"></div>
+                <div class="create-model-actions">
+                    <button class="secondary-button" id="createModelCancel" type="button">Cancel</button>
+                    <button class="primary-button" id="createModelSubmit" type="submit">Create model</button>
+                </div>
+            </div>
+        </form>
+
         <div class="model-cards" id="modelCards"></div>
     </section>
 

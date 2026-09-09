@@ -11,9 +11,9 @@ Evaluate and experiment LLM freely, **own your AI**.
 - **Local AI Control**: Select from multiple configured models, and switch model at any time from the header
 - **Privacy First**: All processing happens on your machine
 - **No Internet Dependencies**: Works completely offline
-- **Custom Personalities**: Create specialized assistants with Modelfiles
+- **Custom Personalities**: Create specialized assistants from the app: pick a base model, write the system prompt, set context size and sampling parameters, and Yla builds the model in Ollama (no Modelfile to write)
 - **Explore Different Parameters**: You can resend a message changing temperature, top_p, and top_k. Every reply shows the parameters that produced it, the token count and the generation speed
-- **Expand with New Models on Ollama**: When a new open-source model is deployed on Ollama server, you can download it and use it right away.
+- **Expand with New Models on Ollama**: Every model installed on the Ollama server shows up automatically. When a new open-source model is deployed on Ollama, you can download it from the app and use it right away.
 - **Visualize Reasoning**: The reasoning of thinking models (DeepSeek, Qwen, Gemma, gpt-oss, ...) is streamed live in a collapsible panel above the answer, using Ollama's native `think` API
 - **Stay in Control**: Stop a generation at any time, retry after an error, and keep the partial answer when a request is interrupted
 - **Markdown Rendering**: Headings, lists (nested), tables, code blocks with language label, quotes and links (opened in a new tab)
@@ -48,7 +48,7 @@ ollama pull deepseek-r1:32b  # Medium-sized model
 
 Check Ollama list of avaiable models [here](https://ollama.com/search).
 
-> Models can also be downloaded from Yla interface, but you have to specify the name in the config file.
+> This step is optional: models can also be downloaded from the Yla interface (use **Create model** and type any library name as base model, or list the model in `src/config.js` to get a Download button).
 
 ### 3. Launch Application
 #### **Linux**:
@@ -62,31 +62,53 @@ chmod +x utils/run-yla.sh
 #### **Windows**:
 ```cmd
 ollama serve
-python -m http.server 8000
+python utils\serve.py 8000
 # Open http://localhost:8000/src/yla.html on your browser
 ```
+> `utils/serve.py` is a plain static server (Python standard library only) that also fetches the list of models published on ollama.com for the **Create model** form. `python -m http.server 8000` works too, but then the form only lists the models already installed.
 
-## Custom Model Configuration
+## Custom Models
 
-Create and use specialized models using Ollama's Modelfiles:
+Every model installed on the Ollama server appears on the model selection screen, with the context size, sampling parameters and system prompt read from Ollama. Nothing has to be configured to use a model you pulled with `ollama pull`.
 
-1. **Create a Modelfile** in the `utils/custom_models` directory:
+### From the app (recommended)
+
+Click **Create model** on the model selection screen and fill in:
+
+- **Name** of the new model (a `:latest` tag is added when you give none)
+- **Base model**, picked from a list with two sections: the models installed on your Ollama server (with their size on disk) and every model published on the [Ollama library](https://ollama.com/library), fetched live from ollama.com with its description and parameter sizes. Choosing a library model shows its variants (tag, download size, context window). Type in the box to filter both sections, or type any name to use it as is. A missing base model is downloaded first, with a progress bar
+- **System prompt**, **context window**, **temperature**, **top K** and **top P**
+
+Yla sends this to Ollama's `/api/create` endpoint, which is exactly what `ollama create -f Modelfile` does with `FROM`, `SYSTEM` and `PARAMETER` lines. The model is stored by Ollama, so it survives browser restarts and incognito windows, and it is visible to `ollama list` and any other client. Creating a model with the name of an existing one replaces it (the app asks for a second click).
+
+**Remove from Ollama** on a model card deletes the model and its files from the server (`ollama rm`).
+
+### With a Modelfile
+
+The classic way still works and the result appears in Yla like any other installed model:
+
 ```bash
-# Example utils/custom_models/technical-assistant.txt
+cat > technical-assistant.txt <<'EOT'
 FROM deepseek-r1:7b
 SYSTEM """
-You are an expert technical assistant. 
+You are an expert technical assistant.
 Respond in markdown format with detailed explanations.
 """
 PARAMETER num_ctx 32768
+EOT
+ollama create my-expert -f technical-assistant.txt
 ```
 
-2. **Build your custom model** (from the root of the project):
-```bash
-ollama create my-expert -f ./utils/custom_models/technical-assistant.txt
-```
+### Optional overrides in config.js
 
-3. **Add it to config.js**:
+`src/config.js` is no longer required, but an entry there is still useful to:
+
+- get a **Download** button for a library model that is not installed yet;
+- **override** what Ollama reports (for example a smaller `num_ctx` than the Modelfile, or `think: false`);
+- show a `description` on the card.
+
+Fields set in `config.js` win over the values read from Ollama; missing fields are filled from the server.
+
 ```javascript
 models: [
     {
@@ -96,9 +118,7 @@ models: [
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
-        systemMessage: "You are an expert technical assistant. Respond in markdown format with detailed explanations.",
-        size: "4.1GB",
-        modelfile: "utils/custom_models/technical-assistant.txt"
+        think: false,
     }
 ]
 ```
@@ -112,11 +132,11 @@ models: [
 | `num_ctx`       | Context window size (tokens). Sent to Ollama with every request and used to trim long conversations so they fit                | 32768         |
 | `temperature`   | Response creativity. Sent with every request and used as default of the "Regenerate" slider | 0.3-1.8       |
 | `top_k`, `top_p` | Sampling parameters. Sent with every request and used as defaults of the "Regenerate" sliders | 40, 0.9 |
-| `systemMessage` | Informational copy of the SYSTEM prompt of the Modelfile. It is shown on the model card but **not** sent to the model (the Modelfile already contains it)               | "You are an expert technical assistant. Respond in markdown format with detailed explanations."  |
+| `systemMessage` | Informational copy of the SYSTEM prompt of the Modelfile. It is shown on the model card but **not** sent to the model (the Modelfile already contains it). When omitted, the prompt stored in Ollama is shown               | "You are an expert technical assistant. Respond in markdown format with detailed explanations."  |
 | `think`         | Optional. `true`/`false` forces thinking on/off; `"low"`, `"medium"`, `"high"` set the effort for models that support levels (e.g. gpt-oss). When omitted, thinking is enabled for every model that reports the `thinking` capability | true |
-| `modelfile`     | Optional. Path of the Modelfile used to build a custom model. When the model is not installed, the card shows the `ollama create` command instead of a Download button (custom models cannot be pulled) | "utils/custom_models/yla.txt" |
+| `modelfile`     | Optional. Path of a Modelfile used to build the model by hand. When the model is not installed, the card shows the `ollama create` command instead of a Download button | "my-modelfiles/yla.txt" |
 
-> For custom models remember to add the version (_:latest_ by default) in the config.
+> Every field except `name` is optional: values that are not set are read from Ollama. For custom models remember to add the version (_:latest_ by default) in the name.
 
 ## Configuration Example
 ```javascript
@@ -131,7 +151,6 @@ const config = {
             top_p: 0.9,                  // 0-1
             systemMessage: "Friendly general assistant",
             size: "4.1GB",
-            modelfile: "utils/custom_models/yla.txt"
         }
     ],
     
@@ -147,17 +166,18 @@ const config = {
 ## Model Management
 - **Validation**: App checks installed models on launch (and again with the Refresh button, or when Ollama comes back online)
 - **Selection**: Choose model from initial carousel. The current model is shown in the header: click it to switch model without losing the conversation
-- **Download**: If it is not present on Ollama server, it will try to pull the model from Ollama. Custom models (with a `modelfile` in the config) show the `ollama create` command to build them instead
+- **Download**: If a configured model is not present on Ollama server, it will try to pull the model from Ollama. Entries with a `modelfile` in the config show the `ollama create` command to build them instead
+- **Create / Remove**: Build a custom model from the **Create model** form (base model, system prompt, parameters) and delete any model with **Remove from Ollama**
 - **Persistence**: The last used model is highlighted at the next launch. Conversations are saved in the browser (localStorage) unless the browser runs in incognito mode
 - **Visual Feedback**: 
   - ✅ Available models - full color, clickable. A "Thinking" badge marks models that support reasoning
   - ⚠️ Missing models - grayed out with warning. Possibility of download
   - ❌ Ollama offline - an error panel with a Retry button, instead of misleading "not installed" badges
 
-> **Note**: Model names in config.js must exactly match Ollama model names. Use `ollama list` to verify installed models.
+> **Note**: Model names in config.js must exactly match Ollama model names. Use `ollama list` to verify installed models. Installed models that are not in config.js are listed after the configured ones.
 
 ## How requests are sent
-Yla talks to Ollama's native `/api/chat` endpoint (not the OpenAI-compatible one, which ignores `top_k` and `num_ctx` and overrides the Modelfile temperature). Each request carries `options: {temperature, top_k, top_p, num_ctx}` from the config (or from the Regenerate sliders) and, for thinking models, `think`. The system prompt comes from the Modelfile.
+Yla talks to Ollama's native `/api/chat` endpoint (not the OpenAI-compatible one, which ignores `top_k` and `num_ctx` and overrides the Modelfile temperature). Each request carries `options: {temperature, top_k, top_p, num_ctx}` from the model (as read from Ollama, overridden by config.js, or from the Regenerate sliders) and, for thinking models, `think`. The system prompt comes from the Modelfile.
 
 The history sent with each message is trimmed to the most recent turns that fit in `num_ctx` minus a reserve for the reply (see `reserveTokens`). When older turns are left out, the reply's footer says so. Reasoning is never sent back to the model.
 
@@ -165,7 +185,7 @@ The history sent with each message is trimmed to the most recent turns that fit 
 **Model Not Found**:
 1. Verify model name matches Ollama's list
 2. Check Ollama is running: `ollama serve`
-3. Ensure model files are in `utils/custom_models` directory and the model was built with `ollama create`
+3. For a custom model, check that it was built (from the **Create model** form or with `ollama create`) and press **Refresh**
 
 **Ollama offline**: the header pill turns red and the model selector shows a Retry button. The app rechecks the connection every few seconds and reloads the model list when Ollama is back.
 

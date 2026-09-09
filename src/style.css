@@ -1446,6 +1446,267 @@ html.dark-mode .send-button {
     line-height: 1.4;
 }
 
+/* Card footer (remove) */
+.model-card-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.6rem;
+}
+
+.model-remove-button {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.model-remove-button:hover {
+    color: var(--danger-text);
+    border-color: var(--danger);
+    background-color: var(--danger-bg);
+}
+
+.model-confirm {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 6px;
+    background-color: var(--danger-bg);
+    color: var(--danger-text);
+    font-size: 0.875rem;
+}
+
+.model-confirm > span:first-child {
+    flex: 1 1 auto;
+}
+
+.danger-button {
+    padding: 0.35rem 0.8rem;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--danger-strong);
+    color: white;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.danger-button:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.danger-button:disabled,
+.model-confirm .secondary-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Create-model form */
+.create-model-panel {
+    margin: 0 0 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-primary);
+}
+
+.create-model-head h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+}
+
+.create-model-head p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.9rem;
+}
+
+.create-model-head code {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    padding: 0 0.3rem;
+    border-radius: 3px;
+    background-color: var(--code-bg);
+    color: var(--code-text);
+}
+
+.create-model-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.create-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.create-field-wide {
+    grid-column: 1 / -1;
+}
+
+.create-field > span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.create-field small {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.create-field a {
+    color: var(--link-color);
+}
+
+.create-field input,
+.create-field textarea {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.create-field textarea {
+    resize: vertical;
+    min-height: 5.5rem;
+}
+
+.create-field input:focus,
+.create-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.create-field input:disabled,
+.create-field textarea:disabled {
+    opacity: 0.6;
+}
+
+.create-model-panel .download-progress {
+    margin-top: 0.9rem;
+}
+
+.create-model-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.create-model-footer .download-status {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.create-model-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.primary-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+}
+
+.model-empty-message {
+    padding: 1.25rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+@media (max-width: 600px) {
+    .create-model-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.base-model-field > label,
+.base-model-variant > label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.base-model-field select {
+    width: 100%;
+    padding: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+}
+
+.base-model-field select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.base-model-field select:disabled {
+    opacity: 0.6;
+}
+
+#baseModelList option {
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+#baseModelList optgroup {
+    color: var(--text-secondary);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.base-model-variant {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.base-model-variant select {
+    padding: 0.45rem 0.6rem;
+}
+
 /* Download / build section */
 .download-section {
     margin-top: 1rem;
