@@ -1,5 +1,15 @@
 import config from './config.js';
 import { selectedModelSettings, showModelSelector } from './modelSelector.js';
+import {
+  MARKER_RE,
+  IMAGE_TOKENS,
+  finalizeDraft,
+  toModelMessage,
+  availableImageCount,
+  describeMarkers,
+  formatDimensions,
+  createAttachmentManager,
+} from './attachments.js';
 import { MarkdownParser } from './parsers/markdown_parser.js';
 import { chat as apiChat, resolveThink, describeError } from './ollamaClient.js';
 
@@ -81,7 +91,8 @@ const ChatApp = (function () {
   }
 
   function estimateMessageTokens(message) {
-    return 4 + estimateTokens(message?.content || '');
+    const imageTokens = Array.isArray(message?.images) ? message.images.length * IMAGE_TOKENS : 0;
+    return 4 + estimateTokens(message?.content || '') + imageTokens;
   }
 
   function formatSeconds(ms) {
@@ -95,13 +106,14 @@ const ChatApp = (function () {
 
   function makeTitle(text) {
     const firstLine = String(text || '')
+      .replace(MARKER_RE, ' ')
       .trim()
       .split('\n')[0]
       // Drop markdown punctuation so titles read as plain text.
       .replace(/[*_`#>~]+/g, '')
       .replace(/\s+/g, ' ')
       .trim();
-    if (!firstLine) return 'New chat';
+    if (!firstLine) return MARKER_RE.test(String(text || '')) ? 'Image' : 'New chat';
     return firstLine.length > TITLE_MAX_LENGTH
       ? firstLine.slice(0, TITLE_MAX_LENGTH).trimEnd() + '…'
       : firstLine;
@@ -128,6 +140,13 @@ const ChatApp = (function () {
       if (!raw || typeof raw !== 'object') return null;
       const role = raw.role === 'assistant' || raw.role === 'system' ? raw.role : 'user';
       const message = { ...raw, role, content: typeof raw.content === 'string' ? raw.content : '' };
+      if (Array.isArray(raw.images)) {
+        message.images = raw.images
+          .filter((img) => img && typeof img === 'object')
+          .map((img) => ({ ...img, name: String(img.name || 'image') }));
+      } else {
+        delete message.images;
+      }
       if (role === 'assistant' && !message.thinking && THINK_TAG_RE.test(message.content)) {
         const split = splitThinkTags(message.content);
         message.thinking = split.thinking;
@@ -171,9 +190,19 @@ const ChatApp = (function () {
       }
     }
 
+    /** Image bytes are never written to storage: only name and size survive a reload. */
+    function withoutImageData(list) {
+      return list.map((c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          Array.isArray(m.images) ? { ...m, images: m.images.map(({ data, ...rest }) => rest) } : m
+        ),
+      }));
+    }
+
     function persist() {
       try {
-        localStorage.setItem(STORAGE_KEYS.conversations, JSON.stringify(conversations));
+        localStorage.setItem(STORAGE_KEYS.conversations, JSON.stringify(withoutImageData(conversations)));
         if (currentConversationId) {
           localStorage.setItem(STORAGE_KEYS.current, String(currentConversationId));
         } else {
@@ -302,6 +331,7 @@ const ChatApp = (function () {
           if (m.role === 'assistant') {
             return { role: 'assistant', content: stripThinkTags(m.content) };
           }
+          if (m.role === 'user') return toModelMessage(m);
           return { role: m.role, content: String(m.content || '') };
         })
         // An assistant turn without any answer (stopped before it replied) adds nothing.
@@ -362,6 +392,10 @@ const ChatApp = (function () {
       scrollToBottomButton: document.getElementById('scrollToBottomButton'),
       modelPill: document.getElementById('modelPill'),
       modelPillName: document.getElementById('modelPillName'),
+      inputContainer: document.getElementById('inputContainer'),
+      attachmentStrip: document.getElementById('attachmentStrip'),
+      attachButton: document.getElementById('attachButton'),
+      imageFileInput: document.getElementById('imageFileInput'),
     };
 
     // ---------- toasts
@@ -470,16 +504,42 @@ const ChatApp = (function () {
     }
 
     /**
+     * Markdown for a user message with `[image N]` markers turned into
+     * thumbnails, or into placeholders when the bytes are gone (after a reload).
+     */
+    function renderUserContent(message) {
+      const images = Array.isArray(message.images) ? message.images : [];
+      if (images.length === 0) return MarkdownParser.parse(message.content || '');
+      // Private-use sentinels survive the markdown parser untouched.
+      const withSentinels = String(message.content || '').replace(MARKER_RE, (match, n) =>
+        images[Number(n) - 1] ? `\uE000${n}\uE001` : match
+      );
+      return MarkdownParser.parse(withSentinels).replace(/\uE000(\d+)\uE001/g, (_, n) => {
+        const img = images[Number(n) - 1];
+        const label = `${img.name}${formatDimensions(img) ? ` · ${formatDimensions(img)}` : ''}`;
+        if (img.data) {
+          return `<span class="msg-image"><img src="${img.data}" alt="${escapeAttr(img.name)}" title="${escapeAttr(label)}" data-image-index="${n}"></span>`;
+        }
+        return `<span class="msg-image-placeholder" title="Images are kept only while the app is open">🖼 ${escapeAttr(label)} · not kept</span>`;
+      });
+    }
+
+    function escapeAttr(text) {
+      return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
      * Renders a user message bubble.
-     * @param {string} text
+     * @param {Object|string} message - Stored message ({content, images}) or plain text
      * @param {number} index - Position in the conversation's message array
      * @param {Object} [params] - Sampling parameters used for the reply
      */
-    function renderUserMessage(text, index, params) {
+    function renderUserMessage(message, index, params) {
+      const normalized = typeof message === 'string' ? { content: message } : message;
       const messageDiv = el('div', 'message user-message');
       messageDiv.dataset.index = String(index);
       const body = el('div', 'user-message-body');
-      body.innerHTML = MarkdownParser.parse(text);
+      body.innerHTML = renderUserContent(normalized);
       messageDiv.appendChild(body);
       addResendControls(messageDiv, index, params);
 
@@ -995,8 +1055,32 @@ const ChatApp = (function () {
       elements.modelPill.classList.remove('hidden');
     }
 
+    function openLightbox(img) {
+      closeLightbox();
+      const box = el('figure', 'image-lightbox');
+      box.id = 'imageLightbox';
+      const full = el('img');
+      full.src = img.src;
+      full.alt = img.alt;
+      const caption = el('figcaption', null, img.title || img.alt);
+      box.append(full, caption);
+      box.addEventListener('click', closeLightbox);
+      document.body.appendChild(box);
+    }
+
+    function closeLightbox() {
+      document.getElementById('imageLightbox')?.remove();
+    }
+
     function init() {
       bindOutsideClickDismiss();
+      elements.chatContainer?.addEventListener('click', (e) => {
+        const img = e.target.closest?.('.msg-image img');
+        if (img) openLightbox(img);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('imageLightbox')) closeLightbox();
+      });
       if (elements.chatScroll) {
         elements.chatScroll.addEventListener('scroll', updateScrollButton, { passive: true });
       }
@@ -1081,7 +1165,7 @@ const ChatApp = (function () {
           lines.push(content || '(no answer)');
         } else {
           lines.push(`## ${msg.role === 'system' ? 'System' : 'User'}`);
-          lines.push(msg.content);
+          lines.push(describeMarkers(msg.content, msg.images));
         }
         lines.push('');
       });
@@ -1121,6 +1205,26 @@ const ChatApp = (function () {
 
   const ChatController = (function () {
     let abortController = null;
+
+    /** true when the selected model can read images, otherwise the reason. */
+    function canAttachImages() {
+      const model = selectedModelSettings.get();
+      if (!model) return 'Select a model first';
+      if (Array.isArray(model.capabilities) && !model.capabilities.includes('vision')) {
+        return `${model.name} cannot read images (no vision capability)`;
+      }
+      return true;
+    }
+
+    const attachments = createAttachmentManager({
+      textarea: UIManager.elements.messageInput,
+      strip: UIManager.elements.attachmentStrip,
+      fileInput: UIManager.elements.imageFileInput,
+      button: UIManager.elements.attachButton,
+      dropZone: UIManager.elements.inputContainer,
+      canAttach: canAttachImages,
+      notify: (text, type) => UIManager.showToast(text, type),
+    });
 
     /** Tokens available for the history after reserving room for the reply. */
     function historyBudget(model) {
@@ -1168,6 +1272,10 @@ const ChatApp = (function () {
         top_p: options.top_p,
       };
       const { messages, dropped } = StateManager.buildHistory(conversation, historyBudget(model));
+      const userMessage = conversation.messages[userIndex];
+      if (userMessage?.images?.length && availableImageCount(userMessage) < userMessage.images.length) {
+        UIManager.showToast('Some images of this message were not kept after closing the app; the model is told they are missing.', 'warning');
+      }
 
       StateManager.setLoading(true);
       UIManager.removeErrorBubbles();
@@ -1279,12 +1387,20 @@ const ChatApp = (function () {
       }
       const input = UIManager.elements.messageInput;
       const text = input ? input.value.trim() : '';
-      if (!text) return;
+      if (attachments.isBusy()) {
+        UIManager.showToast('Wait a moment, an image is still being read', 'warning');
+        return;
+      }
+      if (!text && !attachments.hasImages()) return;
 
+      const { content, images } = finalizeDraft(text, attachments.getImages());
       UIManager.resetInput();
+      attachments.clear();
       const conversation = StateManager.ensureConversation();
-      const index = StateManager.addMessage(conversation.id, { role: 'user', content: text });
-      UIManager.renderUserMessage(text, index);
+      const message = { role: 'user', content };
+      if (images.length) message.images = images;
+      const index = StateManager.addMessage(conversation.id, message);
+      UIManager.renderUserMessage(message, index);
       updateConversationList();
       generate(index);
     }
@@ -1311,7 +1427,7 @@ const ChatApp = (function () {
       conversation.messages.forEach((msg, index) => {
         if (msg.role === 'user') {
           const next = conversation.messages[index + 1];
-          UIManager.renderUserMessage(msg.content, index, next?.role === 'assistant' ? next.params : undefined);
+          UIManager.renderUserMessage(msg, index, next?.role === 'assistant' ? next.params : undefined);
         } else if (msg.role === 'assistant') {
           UIManager.renderAssistantMessage(msg);
         }
@@ -1385,6 +1501,7 @@ const ChatApp = (function () {
 
     /** Called whenever the user picks a model in the selector. */
     function onModelSelected(model) {
+      attachments.refreshAvailability();
       UIManager.setModelPill(model);
       const current = StateManager.getCurrentConversation();
       if (!current) {

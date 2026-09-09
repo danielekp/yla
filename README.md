@@ -17,6 +17,7 @@ Evaluate and experiment LLM freely, **own your AI**.
 - **Visualize Reasoning**: The reasoning of thinking models (DeepSeek, Qwen, Gemma, gpt-oss, ...) is streamed live in a collapsible panel above the answer, using Ollama's native `think` API
 - **Stay in Control**: Stop a generation at any time, retry after an error, and keep the partial answer when a request is interrupted
 - **Markdown Rendering**: Headings, lists (nested), tables, code blocks with language label, quotes and links (opened in a new tab)
+- **Images**: Attach, paste or drop pictures for vision models. Several images per message are supported, and each one is placed in the text exactly where its `[image N]` marker sits, so the model reads them at the right point of the sentence. Image bytes stay in memory only: after closing the app a placeholder with the file name replaces the picture
 
 
 ## Installation
@@ -175,6 +176,13 @@ const config = {
   - ❌ Ollama offline - an error panel with a Retry button, instead of misleading "not installed" badges
 
 > **Note**: Model names in config.js must exactly match Ollama model names. Use `ollama list` to verify installed models. Installed models that are not in config.js are listed after the configured ones.
+
+## Images
+With a model that reports the `vision` capability, the picture button next to the message box (or pasting, or dropping a file on the input area) attaches images to the message:
+
+- Every attachment gets a numbered thumbnail and a marker such as `[image 1]` inserted at the cursor. Move the marker anywhere in the text, or click a thumbnail to insert its marker again; a marker you delete is appended at the end of the message so the image is never lost. Up to 10 images per message; pictures larger than 2048 px on the long edge are downscaled before sending.
+- When the message is sent, each marker becomes Ollama's `[img]` placeholder and the images are sent in marker order, so the model sees each picture where it was written.
+- **Nothing is written to disk**: the saved conversation keeps only the file name and size of each image. After a reload the bubble shows a placeholder instead of the picture, and if you regenerate such a message the model is told that the image is no longer available.
 
 ## How requests are sent
 Yla talks to Ollama's native `/api/chat` endpoint (not the OpenAI-compatible one, which ignores `top_k` and `num_ctx` and overrides the Modelfile temperature). Each request carries `options: {temperature, top_k, top_p, num_ctx}` from the model (as read from Ollama, overridden by config.js, or from the Regenerate sliders) and, for thinking models, `think`. The system prompt comes from the Modelfile.

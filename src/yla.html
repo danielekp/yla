@@ -142,8 +142,15 @@
             </div>
             <div class="visually-hidden" id="chatStatus" role="status" aria-live="polite"></div>
 
-            <div class="input-container">
+            <div class="input-container" id="inputContainer">
+                <div class="attachment-strip hidden" id="attachmentStrip" aria-label="Attached images"></div>
                 <div class="input-wrapper">
+                    <button class="attach-button" id="attachButton" type="button" aria-label="Attach images" title="Attach images (or paste / drop them into the message)">
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                            <path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                    </button>
+                    <input type="file" id="imageFileInput" accept="image/*" multiple hidden>
                     <textarea
                         class="message-input"
                         id="messageInput"
